@@ -48,7 +48,7 @@ function CountdownTimer({
 
   return (
     <div className={`flex flex-col items-center gap-1 ${className}`}>
-      <span className={`text-4xl font-black tabular-nums ${urgent ? 'text-red-500 animate-pulse' : 'text-brand-700'}`}>
+      <span className={`text-4xl font-black tabular-nums ${urgent ? 'text-red-500 animate-pulse' : ''}`} style={urgent ? {} : { color: '#FF5714' }}>
         {remaining}
       </span>
       <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -75,9 +75,12 @@ function LetterButtons({
             disabled={!isAvailable || disabled}
             className={`aspect-square rounded-xl font-bold text-sm sm:text-base flex items-center justify-center transition-all
               ${isAvailable && !disabled
-                ? 'bg-white border-2 border-gray-300 hover:border-brand-500 hover:bg-brand-50 active:scale-95 cursor-pointer'
-                : 'bg-gray-100 text-gray-300 cursor-not-allowed line-through'
-              }`}>
+                ? 'border-2 active:scale-95 cursor-pointer'
+                : 'cursor-not-allowed line-through'
+              }`}
+            style={isAvailable && !disabled
+              ? { background: 'var(--c-surface)', borderColor: 'var(--c-border)', color: 'var(--c-text)' }
+              : { background: 'var(--c-surface2)', color: 'var(--c-text3)' }}>
             {l}
           </button>
         )
@@ -305,7 +308,8 @@ export default function GamePage() {
             <div>
               <p className="text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Categoría</p>
               <select value={selectedCatId} onChange={e => setSelectedCatId(e.target.value)}
-                className="w-full border-2 border-gray-200 focus:border-brand-500 rounded-xl px-3 py-2.5 text-sm font-body focus:outline-none transition-colors bg-white">
+                className="w-full border-2 focus:border-brand-500 rounded-xl px-3 py-2.5 text-sm font-body focus:outline-none transition-colors"
+                style={{ background: 'var(--c-input)', borderColor: 'var(--c-border)', color: 'var(--c-text)' }}>
                 <option value="">— Elige una categoría —</option>
                 {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
@@ -313,22 +317,22 @@ export default function GamePage() {
 
             {/* Timers */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-gray-50 rounded-xl p-3">
+              <div className="rounded-xl p-3" style={{ background: 'var(--c-surface2)' }}>
                 <p className="text-xs text-gray-500 mb-2 font-body">⏱ Elegir letra</p>
                 <div className="flex items-center gap-1">
                   <button onClick={() => updateTimers(gameId!, Math.max(3, (game.letterSeconds ?? 5) - 1), game.answerSeconds ?? 10)}
                     className="w-8 h-8 rounded-lg bg-gray-200 hover:bg-gray-300 font-bold text-gray-700 transition-colors">−</button>
-                  <span className="flex-1 text-center font-display font-semibold text-brand-700 text-lg">{game.letterSeconds ?? 5}s</span>
+                  <span className="flex-1 text-center font-display font-semibold text-lg" style={{ color: '#FF5714' }}>{game.letterSeconds ?? 5}s</span>
                   <button onClick={() => updateTimers(gameId!, Math.min(30, (game.letterSeconds ?? 5) + 1), game.answerSeconds ?? 10)}
                     className="w-8 h-8 rounded-lg bg-gray-200 hover:bg-gray-300 font-bold text-gray-700 transition-colors">+</button>
                 </div>
               </div>
-              <div className="bg-gray-50 rounded-xl p-3">
+              <div className="rounded-xl p-3" style={{ background: 'var(--c-surface2)' }}>
                 <p className="text-xs text-gray-500 mb-2 font-body">⏱ Responder</p>
                 <div className="flex items-center gap-1">
                   <button onClick={() => updateTimers(gameId!, game.letterSeconds ?? 5, Math.max(5, (game.answerSeconds ?? 10) - 1))}
                     className="w-8 h-8 rounded-lg bg-gray-200 hover:bg-gray-300 font-bold text-gray-700 transition-colors">−</button>
-                  <span className="flex-1 text-center font-display font-semibold text-brand-700 text-lg">{game.answerSeconds ?? 10}s</span>
+                  <span className="flex-1 text-center font-display font-semibold text-lg" style={{ color: '#FF5714' }}>{game.answerSeconds ?? 10}s</span>
                   <button onClick={() => updateTimers(gameId!, game.letterSeconds ?? 5, Math.min(60, (game.answerSeconds ?? 10) + 1))}
                     className="w-8 h-8 rounded-lg bg-gray-200 hover:bg-gray-300 font-bold text-gray-700 transition-colors">+</button>
                 </div>
@@ -348,8 +352,8 @@ export default function GamePage() {
                         : [...game.excludedLetters, l]
                       await updateExcludedLetters(gameId!, next)
                     }}
-                      className={`w-8 h-8 text-xs font-bold rounded-lg transition-colors
-                        ${excluded ? 'bg-paprika-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-brand-100 hover:text-brand-700'}`}>
+                      className="w-8 h-8 text-xs font-bold rounded-lg transition-colors"
+                      style={excluded ? { background: '#EC4E20', color: 'white' } : { background: 'var(--c-surface2)', color: 'var(--c-text2)' }}>
                       {l}
                     </button>
                   )
@@ -362,7 +366,8 @@ export default function GamePage() {
             <button
               onClick={handleStartGame}
               disabled={realPlayers.length < 1 || !selectedCatId}
-              className="w-full bg-brand-600 hover:bg-brand-700 disabled:opacity-40 text-white font-display font-semibold py-3.5 rounded-xl text-lg transition-all hover:scale-[1.02] active:scale-95 shadow-md">
+              className="w-full disabled:opacity-40 text-white font-display font-semibold py-3.5 rounded-xl text-lg transition-all hover:scale-[1.02] active:scale-95 shadow-md"
+              style={{ background: '#FF5714' }}>
               {realPlayers.length < 1
                 ? 'Esperando jugadores...'
                 : !selectedCatId
@@ -378,12 +383,14 @@ export default function GamePage() {
           {realPlayers.length === 0
             ? <p className="text-gray-400 text-sm text-center py-3">Aún no hay jugadores</p>
             : realPlayers.map((p, i) => (
-              <div key={p.uid} className={`flex items-center gap-3 rounded-xl px-3 py-2 border border-gray-100
-                ${p.uid === profile.uid ? 'ring-2 ring-brand-400 bg-brand-50' : ''}`}>
-                <span className="text-xs text-gray-400 w-4">#{i + 1}</span>
-                <span className="flex-1 font-semibold text-gray-800 truncate">
+              <div key={p.uid} className="flex items-center gap-3 rounded-xl px-3 py-2"
+                style={p.uid === profile.uid
+                  ? { border: '2px solid #FF5714', background: 'rgba(255,87,20,0.08)' }
+                  : { border: '1px solid var(--c-border)' }}>
+                <span className="text-xs w-4" style={{ color: 'var(--c-text3)' }}>#{i + 1}</span>
+                <span className="flex-1 font-semibold truncate" style={{ color: 'var(--c-text)' }}>
                   {p.displayName}
-                  {p.uid === profile.uid && <span className="text-xs text-brand-500 ml-1">(tú)</span>}
+                  {p.uid === profile.uid && <span className="text-xs ml-1" style={{ color: '#FF5714' }}>(tú)</span>}
                 </span>
                 {isAdmin && (
                   <button onClick={() => eliminatePlayer(gameId!, p.uid)}
@@ -452,18 +459,20 @@ export default function GamePage() {
         </div>
 
         {/* Turno actual */}
-        <div className={`rounded-2xl px-4 py-3 text-center border-2
-          ${isMyTurn ? 'bg-brand-50 border-brand-400' : 'bg-gray-50 border-gray-200'}`}>
-          <p className={`font-black text-lg ${isMyTurn ? 'text-brand-700' : 'text-gray-700'}`}>
+        <div className="rounded-2xl px-4 py-3 text-center border-2"
+          style={isMyTurn
+            ? { background: 'rgba(255,87,20,0.1)', borderColor: '#FF5714' }
+            : { background: 'var(--c-surface)', borderColor: 'var(--c-border)' }}>
+          <p className="font-black text-lg" style={{ color: isMyTurn ? '#FF5714' : 'var(--c-text)' }}>
             {isMyTurn ? '🎯 ¡Es TU turno!' : `⏳ Turno de ${currentPlayer?.displayName ?? '...'}`}
           </p>
         </div>
 
         {/* ── MI TURNO: elegir letra ── */}
         {isMyTurn && !game.currentLetter && (
-          <div className="bg-white rounded-2xl shadow p-4 space-y-3">
+          <div className="rounded-2xl shadow p-4 space-y-3" style={{ background: 'var(--c-surface)' }}>
             <div className="flex items-center justify-between">
-              <p className="font-bold text-gray-700">Elige tu letra</p>
+              <p className="font-bold" style={{ color: 'var(--c-text)' }}>Elige tu letra</p>
               <CountdownTimer
                 startAt={game.letterTimerStartAt}
                 seconds={game.letterSeconds ?? 5}
@@ -479,11 +488,11 @@ export default function GamePage() {
 
         {/* ── MI TURNO: responder ── */}
         {isMyTurn && game.currentLetter && (
-          <div className="bg-white rounded-2xl shadow p-4 space-y-3">
+          <div className="rounded-2xl shadow p-4 space-y-3" style={{ background: 'var(--c-surface)' }}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-gray-500">Tu letra</p>
-                <p className="text-5xl font-black text-brand-600 leading-none">{game.currentLetter}</p>
+                <p className="text-xs" style={{ color: 'var(--c-text2)' }}>Tu letra</p>
+                <p className="text-5xl font-black leading-none" style={{ color: '#FF5714' }}>{game.currentLetter}</p>
               </div>
               <CountdownTimer
                 startAt={game.answerTimerStartAt}
@@ -496,10 +505,12 @@ export default function GamePage() {
                 onChange={e => setAnswerText(e.target.value)}
                 disabled={answerHandled}
                 placeholder={`Empieza con "${game.currentLetter}"...`}
-                className="flex-1 border-2 border-gray-300 focus:border-brand-500 rounded-xl px-4 py-3 text-lg font-bold focus:outline-none disabled:opacity-50"
+                className="flex-1 border-2 rounded-xl px-4 py-3 text-lg font-bold focus:outline-none disabled:opacity-50"
+                style={{ background: 'var(--c-input)', borderColor: 'var(--c-border)', color: 'var(--c-text)' }}
                 autoComplete="off" />
               <button type="submit" disabled={answerHandled || !answerText.trim()}
-                className="bg-brand-600 hover:bg-brand-700 disabled:opacity-40 text-white font-bold px-5 rounded-xl text-xl transition-colors">
+                className="disabled:opacity-40 text-white font-bold px-5 rounded-xl text-xl transition-colors"
+                style={{ background: '#FF5714' }}>
                 ✓
               </button>
             </form>
@@ -509,22 +520,22 @@ export default function GamePage() {
 
         {/* ── TURNO DE OTRO: observar ── */}
         {!isMyTurn && (
-          <div className="bg-white rounded-2xl shadow p-4 text-center space-y-3">
+          <div className="rounded-2xl shadow p-4 text-center space-y-3" style={{ background: 'var(--c-surface)' }}>
             {!game.currentLetter ? (
               <>
-                <p className="text-gray-500 text-sm">
-                  <span className="font-bold text-gray-800">{currentPlayer?.displayName}</span> está eligiendo letra...
+                <p className="text-sm" style={{ color: 'var(--c-text2)' }}>
+                  <span className="font-bold" style={{ color: 'var(--c-text)' }}>{currentPlayer?.displayName}</span> está eligiendo letra...
                 </p>
                 <div className="text-4xl animate-bounce">🤔</div>
                 <CountdownTimer startAt={game.letterTimerStartAt} seconds={game.letterSeconds ?? 5} />
               </>
             ) : (
               <>
-                <p className="text-gray-500 text-sm">
-                  <span className="font-bold text-gray-800">{currentPlayer?.displayName}</span> eligió
+                <p className="text-sm" style={{ color: 'var(--c-text2)' }}>
+                  <span className="font-bold" style={{ color: 'var(--c-text)' }}>{currentPlayer?.displayName}</span> eligió
                 </p>
-                <p className="text-6xl font-black text-brand-600">{game.currentLetter}</p>
-                <p className="text-xs text-gray-400">Escribiendo respuesta...</p>
+                <p className="text-6xl font-black" style={{ color: '#FF5714' }}>{game.currentLetter}</p>
+                <p className="text-xs" style={{ color: 'var(--c-text3)' }}>Escribiendo respuesta...</p>
                 <CountdownTimer startAt={game.answerTimerStartAt} seconds={game.answerSeconds ?? 10} />
               </>
             )}
@@ -532,8 +543,8 @@ export default function GamePage() {
         )}
 
         {/* Lista de jugadores con estado en esta rotación */}
-        <div className="bg-white rounded-2xl shadow p-4 space-y-1.5">
-          <p className="text-xs font-bold text-gray-400 uppercase">Esta rotación</p>
+        <div className="rounded-2xl shadow p-4 space-y-1.5" style={{ background: 'var(--c-surface)' }}>
+          <p className="text-xs font-bold uppercase" style={{ color: 'var(--c-text3)' }}>Esta rotación</p>
           {game.turnOrder.map((uid, i) => {
             const p = players.find(pl => pl.uid === uid)
             if (!p) return null
@@ -541,19 +552,21 @@ export default function GamePage() {
             const hasDone = i < game.turnIndex
             const ans = rotationAnswers.find(a => a.uid === uid)
             return (
-              <div key={uid} className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm
-                ${isCurrent ? 'bg-brand-50 border-2 border-brand-400' : 'border border-gray-100'}`}>
+              <div key={uid} className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm"
+                style={isCurrent
+                  ? { background: 'rgba(255,87,20,0.08)', border: '2px solid #FF5714' }
+                  : { border: '1px solid var(--c-border)' }}>
                 <span>{isCurrent ? '▶' : hasDone ? (ans?.noAnswer ? '❌' : '✅') : '⏳'}</span>
-                <span className={`flex-1 font-semibold truncate ${isCurrent ? 'text-brand-700' : 'text-gray-700'}`}>
+                <span className="flex-1 font-semibold truncate" style={{ color: isCurrent ? '#FF5714' : 'var(--c-text)' }}>
                   {p.displayName}
-                  {uid === profile?.uid && <span className="text-xs text-brand-400 ml-1">(tú)</span>}
+                  {uid === profile?.uid && <span className="text-xs ml-1" style={{ color: '#FF5714' }}>(tú)</span>}
                 </span>
                 {hasDone && ans && !ans.noAnswer && (
-                  <span className="text-xs text-gray-400 font-medium italic">
+                  <span className="text-xs font-medium italic" style={{ color: 'var(--c-text3)' }}>
                     [{ans.letter}] {ans.answer}
                   </span>
                 )}
-                <span className="font-bold text-brand-700 tabular-nums shrink-0">{p.score}pts</span>
+                <span className="font-bold tabular-nums shrink-0" style={{ color: '#FF5714' }}>{p.score}pts</span>
                 {isAdmin && p.status === 'active' && (
                   <button onClick={() => eliminatePlayer(gameId!, uid)}
                     className="text-xs text-red-400 hover:text-red-600 ml-1">✕</button>
@@ -565,7 +578,7 @@ export default function GamePage() {
 
         {/* Panel admin: pausa + timers + saltar */}
         {isAdmin && (
-          <div className="bg-white rounded-2xl shadow p-4 space-y-3 border-2 border-yellow-200">
+          <div className="rounded-2xl shadow p-4 space-y-3 border-2 border-yellow-200" style={{ background: 'var(--c-surface)' }}>
             <p className="text-xs font-bold text-yellow-700 uppercase tracking-wide">⚙️ Controles admin</p>
 
             {/* Timers */}
@@ -574,20 +587,24 @@ export default function GamePage() {
                 <p className="text-xs text-gray-500 mb-1">⏱ Elegir letra</p>
                 <div className="flex items-center gap-1">
                   <button onClick={() => updateTimers(gameId!, Math.max(3, (game.letterSeconds ?? 5) - 1), game.answerSeconds ?? 10)}
-                    className="w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 font-bold text-gray-700">−</button>
-                  <span className="flex-1 text-center font-black text-brand-700">{game.letterSeconds ?? 5}s</span>
+                    className="w-7 h-7 rounded-lg font-bold"
+                    style={{ background: 'var(--c-surface2)', color: 'var(--c-text)' }}>−</button>
+                  <span className="flex-1 text-center font-black" style={{ color: '#FF5714' }}>{game.letterSeconds ?? 5}s</span>
                   <button onClick={() => updateTimers(gameId!, Math.min(30, (game.letterSeconds ?? 5) + 1), game.answerSeconds ?? 10)}
-                    className="w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 font-bold text-gray-700">+</button>
+                    className="w-7 h-7 rounded-lg font-bold"
+                    style={{ background: 'var(--c-surface2)', color: 'var(--c-text)' }}>+</button>
                 </div>
               </div>
               <div>
                 <p className="text-xs text-gray-500 mb-1">⏱ Responder</p>
                 <div className="flex items-center gap-1">
                   <button onClick={() => updateTimers(gameId!, game.letterSeconds ?? 5, Math.max(5, (game.answerSeconds ?? 10) - 1))}
-                    className="w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 font-bold text-gray-700">−</button>
-                  <span className="flex-1 text-center font-black text-brand-700">{game.answerSeconds ?? 10}s</span>
+                    className="w-7 h-7 rounded-lg font-bold"
+                    style={{ background: 'var(--c-surface2)', color: 'var(--c-text)' }}>−</button>
+                  <span className="flex-1 text-center font-black" style={{ color: '#FF5714' }}>{game.answerSeconds ?? 10}s</span>
                   <button onClick={() => updateTimers(gameId!, game.letterSeconds ?? 5, Math.min(60, (game.answerSeconds ?? 10) + 1))}
-                    className="w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 font-bold text-gray-700">+</button>
+                    className="w-7 h-7 rounded-lg font-bold"
+                    style={{ background: 'var(--c-surface2)', color: 'var(--c-text)' }}>+</button>
                 </div>
               </div>
             </div>
