@@ -46,7 +46,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-56px)] flex flex-col items-center justify-center p-4" style={{ background: '#353531' }}>
+    <div className="min-h-[calc(100vh-56px)] flex flex-col items-center justify-center p-4" style={{ background: '#111111' }}>
       <div className="text-center mb-8">
         <img src="/logo.svg" alt="BASTA" className="w-32 h-32 sm:w-40 sm:h-40 mx-auto mb-4 drop-shadow-2xl" />
         <h1
@@ -55,10 +55,10 @@ export default function Home() {
         >
           ¡BASTA!
         </h1>
-        <p className="text-gray-400 mt-3">
-          Hola, <span className="font-bold" style={{ color: '#FF9505' }}>{profile.displayName}</span>
+        <p className="mt-3" style={{ color: '#888' }}>
+          Hola, <span className="font-bold" style={{ color: '#E8AA14' }}>{profile.displayName}</span>
           {isAdmin && (
-            <span className="ml-2 text-white text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: '#EC4E20' }}>
+            <span className="ml-2 text-white text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: '#FF5714' }}>
               Admin
             </span>
           )}
@@ -75,14 +75,14 @@ export default function Home() {
               <button
                 onClick={() => setMode('create')}
                 className="flex-1 text-white font-display font-semibold text-lg py-4 rounded-2xl shadow-lg transition-all hover:scale-105 active:scale-95"
-                style={{ background: '#016FB9' }}
+                style={{ background: '#FF5714' }}
               >
                 🎲 Crear partida
               </button>
               <button
                 onClick={() => navigate('/admin')}
                 className="flex-1 text-white font-display font-semibold text-lg py-4 rounded-2xl shadow-lg transition-all hover:scale-105 active:scale-95"
-                style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)' }}
+                style={{ background: 'rgba(27,231,255,0.15)', border: '1px solid rgba(27,231,255,0.35)', color: '#1BE7FF' }}
               >
                 ⚙️ Categorías
               </button>
@@ -92,14 +92,14 @@ export default function Home() {
               <button
                 onClick={() => setMode('join')}
                 className="flex-1 text-white font-display font-semibold text-lg py-4 rounded-2xl shadow-lg transition-all hover:scale-105 active:scale-95"
-                style={{ background: '#016FB9' }}
+                style={{ background: '#FF5714' }}
               >
                 🔑 Unirse a partida
               </button>
               <button
                 onClick={() => navigate('/profile')}
-                className="flex-1 text-white font-display font-semibold text-lg py-4 rounded-2xl shadow-lg transition-all hover:scale-105 active:scale-95"
-                style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)' }}
+                className="flex-1 font-display font-semibold text-lg py-4 rounded-2xl shadow-lg transition-all hover:scale-105 active:scale-95"
+                style={{ background: 'rgba(27,231,255,0.15)', border: '1px solid rgba(27,231,255,0.35)', color: '#1BE7FF' }}
               >
                 👤 Mi perfil
               </button>
@@ -110,7 +110,7 @@ export default function Home() {
 
       {mode === 'create' && (
         <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm space-y-4">
-          <h2 className="text-xl font-display font-semibold" style={{ color: '#016FB9' }}>Nueva partida</h2>
+          <h2 className="text-xl font-display font-semibold" style={{ color: '#FF5714' }}>Nueva partida</h2>
           <div>
             <label className="text-sm font-medium text-gray-600 block mb-2">Máximo de jugadores</label>
             <div className="flex gap-2 flex-wrap">
@@ -118,7 +118,7 @@ export default function Home() {
                 <button key={n} onClick={() => setMaxPlayers(n)}
                   className="w-10 h-10 rounded-lg font-bold text-sm transition-colors"
                   style={maxPlayers === n
-                    ? { background: '#016FB9', color: 'white' }
+                    ? { background: '#FF5714', color: 'white' }
                     : { background: '#f3f4f6', color: '#374151' }}>
                   {n}
                 </button>
@@ -133,7 +133,7 @@ export default function Home() {
             </button>
             <button onClick={handleCreate} disabled={loading}
               className="flex-1 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl transition-colors"
-              style={{ background: '#016FB9' }}>
+              style={{ background: '#FF5714' }}>
               {loading ? 'Creando...' : 'Crear'}
             </button>
           </div>
@@ -142,7 +142,7 @@ export default function Home() {
 
       {mode === 'join' && (
         <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm space-y-4">
-          <h2 className="text-xl font-display font-semibold" style={{ color: '#016FB9' }}>Unirse a partida</h2>
+          <h2 className="text-xl font-display font-semibold" style={{ color: '#FF5714' }}>Unirse a partida</h2>
           <div>
             <label className="text-sm font-medium text-gray-600 block mb-1">Código de partida</label>
             <input value={code} onChange={e => setCode(e.target.value.toUpperCase())}
@@ -158,7 +158,7 @@ export default function Home() {
             </button>
             <button onClick={handleJoin} disabled={loading}
               className="flex-1 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl transition-colors"
-              style={{ background: '#016FB9' }}>
+              style={{ background: '#FF5714' }}>
               {loading ? 'Buscando...' : 'Unirse'}
             </button>
           </div>

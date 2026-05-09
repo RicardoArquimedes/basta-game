@@ -1,10 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
   <!-- Circle background -->
-  <circle cx="100" cy="100" r="96" fill="#EC4E20"/>
+  <circle cx="100" cy="100" r="96" fill="#FF5714"/>
   <!-- Inner ring accent -->
-  <circle cx="100" cy="100" r="88" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="3"/>
-  <!-- Saffron accent arc top -->
-  <path d="M 30 60 A 80 80 0 0 1 170 60" fill="none" stroke="#FF9505" stroke-width="5" stroke-linecap="round" opacity="0.6"/>
+  <circle cx="100" cy="100" r="88" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="3"/>
+  <!-- Aqua accent arc -->
+  <path d="M 28 65 A 80 80 0 0 1 172 65" fill="none" stroke="#1BE7FF" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+  <!-- Chartreuse accent arc bottom -->
+  <path d="M 38 148 A 75 75 0 0 0 162 148" fill="none" stroke="#E4FF1A" stroke-width="4" stroke-linecap="round" opacity="0.5"/>
   <!-- Basta! text -->
   <text
     x="100"

@@ -19,7 +19,7 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="text-white px-4 py-2 flex items-center justify-between shadow-lg" style={{ background: '#353531' }}>
+      <nav className="text-white px-4 py-2 flex items-center justify-between shadow-lg" style={{ background: '#111111' }}>
         <button
           onClick={() => navigate('/')}
           className="flex items-center gap-2 hover:opacity-80 transition-opacity"
@@ -54,7 +54,7 @@ export default function Navbar() {
 
             <button
               onClick={handleSignOut}
-              className="text-xs px-3 py-1.5 rounded-lg transition-colors" style={{ background: '#016FB9' }}
+              className="text-xs px-3 py-1.5 rounded-lg transition-colors" style={{ background: '#FF5714' }}
             >
               Salir
             </button>
