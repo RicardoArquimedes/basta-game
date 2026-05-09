@@ -101,10 +101,12 @@ export default function GamePage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [selectedCatId, setSelectedCatId] = useState('')
   const [showCatPicker, setShowCatPicker] = useState(false)
+  const [caughtCheating, setCaughtCheating] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   // Track which turn we've already handled to avoid double-submit
   const handledTurnKey = useRef('')
+  const cheatHandledRef = useRef(false)
 
   const isAdmin = game?.adminId === profile?.uid
   const isMyTurn = !isAdmin && game?.currentTurnUid === profile?.uid
@@ -149,6 +151,46 @@ export default function GamePage() {
     getCategories().then(cats => setCategories(cats.filter(c => c.isActive)))
   }, [])
 
+  // ── Anti-trampa: detectar si el jugador sale durante su turno ─────────────────
+  useEffect(() => {
+    if (!isMyTurn || game?.status !== 'player_turn' || caughtCheating) return
+
+    cheatHandledRef.current = false
+
+    async function handleCheat() {
+      if (cheatHandledRef.current) return
+      cheatHandledRef.current = true
+      setCaughtCheating(true)
+      if (gameId && profile) {
+        await eliminatePlayer(gameId, profile.uid)
+      }
+    }
+
+    let blurTimer: ReturnType<typeof setTimeout>
+
+    function onVisibilityChange() {
+      if (document.hidden) handleCheat()
+    }
+    function onBlur() {
+      // Pequeño delay para evitar falsos positivos (click en barra del browser, etc.)
+      blurTimer = setTimeout(() => handleCheat(), 800)
+    }
+    function onFocus() {
+      clearTimeout(blurTimer)
+    }
+
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    window.addEventListener('blur', onBlur)
+    window.addEventListener('focus', onFocus)
+
+    return () => {
+      clearTimeout(blurTimer)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      window.removeEventListener('blur', onBlur)
+      window.removeEventListener('focus', onFocus)
+    }
+  }, [isMyTurn, game?.status, caughtCheating, gameId, profile])
+
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
   const handleLetterExpire = useCallback(async () => {
@@ -188,7 +230,33 @@ export default function GamePage() {
   if (!game || !profile) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-56px)]">
-        <div className="animate-spin h-8 w-8 border-4 border-brand-500 border-t-transparent rounded-full" />
+        <div className="animate-spin h-8 w-8 border-4 border-t-transparent rounded-full" style={{ borderColor: '#FF5714', borderTopColor: 'transparent' }} />
+      </div>
+    )
+  }
+
+  // ── Overlay trampa ────────────────────────────────────────────────────────────
+  if (caughtCheating) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center p-6" style={{ background: '#111111' }}>
+        <img src="/logo.svg" alt="BASTA" className="w-28 h-28 mb-6 animate-bounce" />
+        <h1
+          className="text-4xl font-display font-semibold text-white text-center mb-3"
+          style={{ letterSpacing: '0.08em' }}
+        >
+          ¡No hagas trampa!
+        </h1>
+        <p className="text-center mb-6 max-w-xs" style={{ color: '#888' }}>
+          Saliste de la ventana durante tu turno. Has sido <span style={{ color: '#FF5714', fontWeight: 700 }}>eliminado</span> de la partida.
+        </p>
+        <div
+          className="rounded-2xl px-6 py-4 text-center max-w-xs"
+          style={{ background: 'rgba(255,87,20,0.12)', border: '1px solid rgba(255,87,20,0.3)' }}
+        >
+          <p className="text-sm" style={{ color: '#FF5714' }}>
+            Puedes seguir viendo la partida pero ya no participas en ella.
+          </p>
+        </div>
       </div>
     )
   }
