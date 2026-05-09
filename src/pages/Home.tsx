@@ -46,21 +46,22 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-56px)] bg-gradient-to-br from-brand-100 via-purple-50 to-pink-100 flex flex-col items-center justify-center p-4">
+    <div className="min-h-[calc(100vh-56px)] bg-charcoal flex flex-col items-center justify-center p-4">
       <div className="text-center mb-8">
-        <h1 className="text-7xl sm:text-9xl font-black text-brand-700 tracking-tighter drop-shadow-lg">
+        <img src="/logo.svg" alt="BASTA" className="w-32 h-32 sm:w-40 sm:h-40 mx-auto mb-3 drop-shadow-2xl" />
+        <h1 className="text-6xl sm:text-8xl font-display font-semibold text-white tracking-wide drop-shadow-lg">
           ¡BASTA!
         </h1>
-        <p className="text-gray-500 mt-2 font-medium">
-          Hola, <span className="text-brand-600 font-bold">{profile.displayName}</span>
+        <p className="text-gray-400 mt-3 font-body">
+          Hola, <span className="text-saffron-400 font-bold">{profile.displayName}</span>
           {isAdmin && (
-            <span className="ml-2 bg-brand-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+            <span className="ml-2 bg-paprika-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
               Admin
             </span>
           )}
         </p>
         {isAdmin && (
-          <p className="text-xs text-gray-400 mt-1">Como admin, diriges la partida pero no juegas</p>
+          <p className="text-xs text-gray-500 mt-1">Como admin, diriges la partida pero no juegas</p>
         )}
       </div>
 
@@ -70,13 +71,13 @@ export default function Home() {
             <>
               <button
                 onClick={() => setMode('create')}
-                className="flex-1 bg-brand-600 hover:bg-brand-700 text-white font-black text-lg py-4 rounded-2xl shadow-lg transition-all hover:scale-105 active:scale-95"
+                className="flex-1 bg-brand-600 hover:bg-brand-700 text-white font-display font-semibold text-lg py-4 rounded-2xl shadow-lg transition-all hover:scale-105 active:scale-95"
               >
                 🎲 Crear partida
               </button>
               <button
                 onClick={() => navigate('/admin')}
-                className="flex-1 bg-white hover:bg-brand-50 text-brand-700 font-black text-lg py-4 rounded-2xl shadow-lg border-2 border-brand-200 transition-all hover:scale-105 active:scale-95"
+                className="flex-1 bg-white/10 hover:bg-white/20 text-white font-display font-semibold text-lg py-4 rounded-2xl shadow-lg border border-white/20 transition-all hover:scale-105 active:scale-95"
               >
                 ⚙️ Categorías
               </button>
@@ -85,13 +86,13 @@ export default function Home() {
             <>
               <button
                 onClick={() => setMode('join')}
-                className="flex-1 bg-brand-600 hover:bg-brand-700 text-white font-black text-lg py-4 rounded-2xl shadow-lg transition-all hover:scale-105 active:scale-95"
+                className="flex-1 bg-brand-600 hover:bg-brand-700 text-white font-display font-semibold text-lg py-4 rounded-2xl shadow-lg transition-all hover:scale-105 active:scale-95"
               >
                 🔑 Unirse a partida
               </button>
               <button
                 onClick={() => navigate('/profile')}
-                className="flex-1 bg-white hover:bg-brand-50 text-brand-700 font-black text-lg py-4 rounded-2xl shadow-lg border-2 border-brand-200 transition-all hover:scale-105 active:scale-95"
+                className="flex-1 bg-white/10 hover:bg-white/20 text-white font-display font-semibold text-lg py-4 rounded-2xl shadow-lg border border-white/20 transition-all hover:scale-105 active:scale-95"
               >
                 👤 Mi perfil
               </button>
@@ -102,7 +103,7 @@ export default function Home() {
 
       {mode === 'create' && (
         <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm space-y-4">
-          <h2 className="text-xl font-bold text-brand-700">Nueva partida</h2>
+          <h2 className="text-xl font-display font-semibold text-brand-700">Nueva partida</h2>
           <div>
             <label className="text-sm font-medium text-gray-600 block mb-2">Máximo de jugadores</label>
             <div className="flex gap-2 flex-wrap">
@@ -131,7 +132,7 @@ export default function Home() {
 
       {mode === 'join' && (
         <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm space-y-4">
-          <h2 className="text-xl font-bold text-brand-700">Unirse a partida</h2>
+          <h2 className="text-xl font-display font-semibold text-brand-700">Unirse a partida</h2>
           <div>
             <label className="text-sm font-medium text-gray-600 block mb-1">Código de partida</label>
             <input value={code} onChange={e => setCode(e.target.value.toUpperCase())}

@@ -200,19 +200,58 @@ export default function GamePage() {
     const realPlayers = players.filter(p => p.uid !== game.adminId)
     return (
       <div className="max-w-lg mx-auto p-4 space-y-4">
-        <div className="bg-gradient-to-br from-brand-600 to-brand-800 rounded-2xl p-5 text-white text-center">
-          <p className="text-xs uppercase tracking-widest opacity-75 mb-1">Código de partida</p>
-          <p className="text-4xl font-black tracking-widest">{game.code}</p>
-          <p className="text-sm opacity-75 mt-1">{realPlayers.length}/{game.maxPlayers} jugadores</p>
+        {/* Código */}
+        <div className="bg-charcoal rounded-2xl p-5 text-white text-center">
+          <p className="text-xs uppercase tracking-widest opacity-60 mb-1 font-body">Código de partida</p>
+          <p className="text-4xl font-display font-semibold tracking-widest text-saffron-400">{game.code}</p>
+          <p className="text-sm opacity-60 mt-1">{realPlayers.length}/{game.maxPlayers} jugadores</p>
         </div>
 
+        {/* Panel admin */}
         {isAdmin && (
-          <div className="bg-white rounded-2xl shadow p-4 space-y-3">
-            <h3 className="font-bold text-brand-700">⚙️ Admin</h3>
+          <div className="bg-white rounded-2xl shadow p-4 space-y-4">
+            <h3 className="font-display font-semibold text-brand-700 flex items-center gap-2">
+              <span className="w-6 h-6 bg-brand-600 text-white rounded-full flex items-center justify-center text-xs">⚙</span>
+              Configuración de partida
+            </h3>
+
+            {/* Categoría — siempre visible */}
+            <div>
+              <p className="text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Categoría</p>
+              <select value={selectedCatId} onChange={e => setSelectedCatId(e.target.value)}
+                className="w-full border-2 border-gray-200 focus:border-brand-500 rounded-xl px-3 py-2.5 text-sm font-body focus:outline-none transition-colors bg-white">
+                <option value="">— Elige una categoría —</option>
+                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+
+            {/* Timers */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-gray-50 rounded-xl p-3">
+                <p className="text-xs text-gray-500 mb-2 font-body">⏱ Elegir letra</p>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => updateTimers(gameId!, Math.max(3, (game.letterSeconds ?? 5) - 1), game.answerSeconds ?? 10)}
+                    className="w-8 h-8 rounded-lg bg-gray-200 hover:bg-gray-300 font-bold text-gray-700 transition-colors">−</button>
+                  <span className="flex-1 text-center font-display font-semibold text-brand-700 text-lg">{game.letterSeconds ?? 5}s</span>
+                  <button onClick={() => updateTimers(gameId!, Math.min(30, (game.letterSeconds ?? 5) + 1), game.answerSeconds ?? 10)}
+                    className="w-8 h-8 rounded-lg bg-gray-200 hover:bg-gray-300 font-bold text-gray-700 transition-colors">+</button>
+                </div>
+              </div>
+              <div className="bg-gray-50 rounded-xl p-3">
+                <p className="text-xs text-gray-500 mb-2 font-body">⏱ Responder</p>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => updateTimers(gameId!, game.letterSeconds ?? 5, Math.max(5, (game.answerSeconds ?? 10) - 1))}
+                    className="w-8 h-8 rounded-lg bg-gray-200 hover:bg-gray-300 font-bold text-gray-700 transition-colors">−</button>
+                  <span className="flex-1 text-center font-display font-semibold text-brand-700 text-lg">{game.answerSeconds ?? 10}s</span>
+                  <button onClick={() => updateTimers(gameId!, game.letterSeconds ?? 5, Math.min(60, (game.answerSeconds ?? 10) + 1))}
+                    className="w-8 h-8 rounded-lg bg-gray-200 hover:bg-gray-300 font-bold text-gray-700 transition-colors">+</button>
+                </div>
+              </div>
+            </div>
 
             {/* Letras excluidas */}
             <div>
-              <p className="text-xs font-semibold text-gray-500 mb-2">Letras excluidas (toca para activar/desactivar)</p>
+              <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Letras excluidas</p>
               <div className="flex flex-wrap gap-1">
                 {ALL_LETTERS.map(l => {
                   const excluded = game.excludedLetters.includes(l)
@@ -224,51 +263,41 @@ export default function GamePage() {
                       await updateExcludedLetters(gameId!, next)
                     }}
                       className={`w-8 h-8 text-xs font-bold rounded-lg transition-colors
-                        ${excluded ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-brand-100'}`}>
+                        ${excluded ? 'bg-paprika-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-brand-100 hover:text-brand-700'}`}>
                       {l}
                     </button>
                   )
                 })}
               </div>
-              <p className="text-xs text-gray-400 mt-1">
-                {game.availableLetters.length} letras disponibles para jugar
-              </p>
+              <p className="text-xs text-gray-400 mt-1">{game.availableLetters.length} letras disponibles</p>
             </div>
 
-            {!showCatPicker ? (
-              <button onClick={() => setShowCatPicker(true)} disabled={realPlayers.length < 1}
-                className="w-full bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white font-bold py-3 rounded-xl">
-                {realPlayers.length < 1 ? 'Esperando jugadores...' : '▶ Iniciar partida'}
-              </button>
-            ) : (
-              <div className="space-y-2">
-                <p className="text-sm font-semibold text-gray-600">Elige la categoría del juego:</p>
-                <select value={selectedCatId} onChange={e => setSelectedCatId(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400">
-                  <option value="">— Selecciona —</option>
-                  {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-                <div className="flex gap-2">
-                  <button onClick={() => setShowCatPicker(false)} className="flex-1 bg-gray-100 text-gray-600 font-bold py-2 rounded-xl">Cancelar</button>
-                  <button onClick={handleStartGame} disabled={!selectedCatId}
-                    className="flex-1 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white font-bold py-2 rounded-xl">Confirmar</button>
-                </div>
-              </div>
-            )}
+            {/* Botón iniciar */}
+            <button
+              onClick={handleStartGame}
+              disabled={realPlayers.length < 1 || !selectedCatId}
+              className="w-full bg-brand-600 hover:bg-brand-700 disabled:opacity-40 text-white font-display font-semibold py-3.5 rounded-xl text-lg transition-all hover:scale-[1.02] active:scale-95 shadow-md">
+              {realPlayers.length < 1
+                ? 'Esperando jugadores...'
+                : !selectedCatId
+                  ? 'Elige una categoría primero'
+                  : '▶ Iniciar partida'}
+            </button>
           </div>
         )}
 
+        {/* Lista de jugadores */}
         <div className="bg-white rounded-2xl shadow p-4 space-y-2">
-          <p className="text-xs font-bold text-gray-400 uppercase">Jugadores</p>
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wide">Jugadores</p>
           {realPlayers.length === 0
             ? <p className="text-gray-400 text-sm text-center py-3">Aún no hay jugadores</p>
             : realPlayers.map((p, i) => (
               <div key={p.uid} className={`flex items-center gap-3 rounded-xl px-3 py-2 border border-gray-100
-                ${p.uid === profile.uid ? 'ring-2 ring-brand-400' : ''}`}>
+                ${p.uid === profile.uid ? 'ring-2 ring-brand-400 bg-brand-50' : ''}`}>
                 <span className="text-xs text-gray-400 w-4">#{i + 1}</span>
                 <span className="flex-1 font-semibold text-gray-800 truncate">
                   {p.displayName}
-                  {p.uid === profile.uid && <span className="text-xs text-brand-400 ml-1">(tú)</span>}
+                  {p.uid === profile.uid && <span className="text-xs text-brand-500 ml-1">(tú)</span>}
                 </span>
                 {isAdmin && (
                   <button onClick={() => eliminatePlayer(gameId!, p.uid)}
@@ -279,7 +308,7 @@ export default function GamePage() {
           }
         </div>
 
-        {!isAdmin && <p className="text-center text-gray-400 text-sm animate-pulse">Esperando al admin para iniciar...</p>}
+        {!isAdmin && <p className="text-center text-gray-400 text-sm animate-pulse font-body">Esperando al admin para iniciar...</p>}
       </div>
     )
   }
@@ -581,7 +610,7 @@ export default function GamePage() {
 
     return (
       <div className="max-w-lg mx-auto p-4 space-y-4">
-        <div className="bg-gradient-to-br from-indigo-500 to-brand-700 rounded-2xl p-4 text-white text-center">
+        <div className="bg-gradient-to-br from-brand-600 to-charcoal rounded-2xl p-4 text-white text-center">
           <p className="text-xs uppercase tracking-widest opacity-80">Rotación {game.rotationNumber} completada</p>
           <h2 className="text-xl font-black mt-1">
             {noLettersLeft ? '🏁 ¡Letras agotadas!' : `Quedan ${game.availableLetters.length} letras`}
@@ -678,7 +707,7 @@ export default function GamePage() {
     const sorted = [...players].sort((a, b) => b.score - a.score)
     return (
       <div className="max-w-lg mx-auto p-4 space-y-4">
-        <div className="text-center bg-gradient-to-br from-brand-600 to-purple-700 rounded-2xl p-6 text-white">
+        <div className="text-center bg-gradient-to-br from-paprika-500 to-charcoal rounded-2xl p-6 text-white">
           <div className="text-5xl mb-2">🏆</div>
           <h1 className="text-3xl font-black">¡Juego terminado!</h1>
           <p className="opacity-75 mt-1 text-sm">{game.rotationNumber} rotaciones · {game.usedLetters.length} letras usadas</p>

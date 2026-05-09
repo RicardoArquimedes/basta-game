@@ -14,9 +14,10 @@ import ProfilePage from './pages/ProfilePage'
 
 function FullScreenLoader() {
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-brand-100 via-purple-50 to-pink-100 z-50">
-      <p className="text-5xl font-black text-brand-700 tracking-tighter mb-6 animate-pulse">¡BASTA!</p>
-      <div className="h-8 w-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" />
+    <div className="fixed inset-0 flex flex-col items-center justify-center bg-charcoal z-50">
+      <img src="/logo.svg" alt="BASTA" className="w-28 h-28 mb-4 animate-bounce-in" />
+      <p className="text-4xl font-display font-semibold text-white tracking-wide mb-6">¡BASTA!</p>
+      <div className="h-8 w-8 border-4 border-brand-400 border-t-transparent rounded-full animate-spin" />
     </div>
   )
 }
@@ -30,7 +31,7 @@ function ErrorScreen({ message }: { message: string }) {
   const isPermissions = message.toLowerCase().includes('permission')
 
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-brand-100 via-purple-50 to-pink-100 z-50 p-6">
+    <div className="fixed inset-0 flex flex-col items-center justify-center bg-charcoal z-50 p-6">
       <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm text-center space-y-4">
         <div className="text-5xl">⚠️</div>
         <h2 className="text-xl font-black text-gray-800">Algo salió mal</h2>
@@ -66,7 +67,7 @@ service cloud.firestore {
 
         <button
           onClick={handleSignOut}
-          className="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 rounded-xl transition-colors text-sm"
+          className="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 rounded-xl transition-colors text-sm font-body"
         >
           Cerrar sesión e intentar de nuevo
         </button>

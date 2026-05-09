@@ -7,6 +7,9 @@
     -webkit-tap-highlight-color: transparent;
   }
   body {
-    @apply antialiased;
+    @apply antialiased font-body;
+  }
+  h1, h2, h3 {
+    @apply font-display;
   }
 }

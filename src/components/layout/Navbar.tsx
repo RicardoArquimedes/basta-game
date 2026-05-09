@@ -19,12 +19,13 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="bg-brand-700 text-white px-4 py-3 flex items-center justify-between shadow-lg">
+      <nav className="bg-charcoal text-white px-4 py-2 flex items-center justify-between shadow-lg">
         <button
           onClick={() => navigate('/')}
-          className="text-2xl font-black tracking-widest hover:text-brand-200 transition-colors"
+          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
         >
-          ¡BASTA!
+          <img src="/logo.svg" alt="BASTA" className="h-9 w-9" />
+          <span className="text-2xl font-display font-semibold tracking-wide text-white">¡BASTA!</span>
         </button>
 
         {!loading && profile && (
@@ -38,7 +39,7 @@ export default function Navbar() {
                   👤 Invitado · ver perfil
                 </span>
               ) : (
-                <span className="text-xs text-brand-300 hidden sm:block leading-tight">ver perfil</span>
+                <span className="text-xs text-brand-200 hidden sm:block leading-tight">ver perfil</span>
               )}
             </div>
 
