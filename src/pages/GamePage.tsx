@@ -107,11 +107,13 @@ export default function GamePage() {
   const [showCatPicker, setShowCatPicker] = useState(false)
   const [caughtCheating, setCaughtCheating] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [cheatToast, setCheatToast] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   // Track which turn we've already handled to avoid double-submit
   const handledTurnKey = useRef('')
   const cheatHandledRef = useRef(false)
+  const prevPlayerStatusesRef = useRef<Record<string, string>>({})
 
   const isAdmin = game?.adminId === profile?.uid
   const isMyTurn = !isAdmin && game?.currentTurnUid === profile?.uid
@@ -163,6 +165,26 @@ export default function GamePage() {
       cheatHandledRef.current = false
     }
   }, [game?.currentCategoryId])
+
+  // Detectar trampa de otros jugadores y mostrar toast a los demás
+  useEffect(() => {
+    players.forEach(player => {
+      const prev = prevPlayerStatusesRef.current[player.uid]
+      if (
+        prev === 'active' &&
+        player.status === 'eliminated' &&
+        player.uid !== profile?.uid &&
+        game?.status === 'player_turn'
+      ) {
+        setCheatToast(player.displayName)
+        const t = setTimeout(() => setCheatToast(null), 10000)
+        return () => clearTimeout(t)
+      }
+    })
+    const snapshot: Record<string, string> = {}
+    players.forEach(p => { snapshot[p.uid] = p.status })
+    prevPlayerStatusesRef.current = snapshot
+  }, [players])
 
   // ── Anti-trampa: detectar si el jugador sale durante su turno ─────────────────
   useEffect(() => {
@@ -256,6 +278,21 @@ export default function GamePage() {
       </div>
     )
   }
+
+  // ── Toast trampa (visible para todos menos el tramposo) ──────────────────────
+  const cheatToastEl = cheatToast ? (
+    <div className="fixed top-16 left-0 right-0 z-40 flex justify-center pointer-events-none px-4">
+      <div
+        className="flex items-center gap-2 px-5 py-3 rounded-2xl shadow-2xl text-sm font-bold animate-bounce"
+        style={{ background: 'rgba(20,20,20,0.95)', border: '2px solid #FF5714', color: '#FF5714', maxWidth: 340 }}
+      >
+        <span className="text-xl">🚨</span>
+        <span style={{ color: '#fff' }}>
+          <span style={{ color: '#FF5714' }}>{cheatToast}</span> hizo trampa en este turno
+        </span>
+      </div>
+    </div>
+  ) : null
 
   // ── Overlay trampa ────────────────────────────────────────────────────────────
   if (caughtCheating) {
@@ -478,6 +515,7 @@ export default function GamePage() {
 
     return (
       <div className="max-w-lg mx-auto p-4 space-y-3">
+        {cheatToastEl}
         {/* Header: categoría y progreso */}
         <div className="bg-gradient-to-br from-brand-600 to-brand-800 rounded-2xl px-4 py-3 text-white">
           <div className="flex items-center justify-between">
@@ -690,6 +728,7 @@ export default function GamePage() {
 
     return (
       <div className="max-w-lg mx-auto p-4 space-y-4">
+        {cheatToastEl}
         <div className="bg-gradient-to-br from-red-500 to-orange-500 rounded-2xl p-4 text-white text-center">
           <p className="text-2xl font-black">⏸ Juego pausado</p>
           <p className="text-sm opacity-80 mt-1">El admin pausó antes del turno de <strong>{nextPlayer?.displayName}</strong></p>
@@ -764,6 +803,7 @@ export default function GamePage() {
 
     return (
       <div className="max-w-lg mx-auto p-4 space-y-4">
+        {cheatToastEl}
         <div className="bg-gradient-to-br from-brand-600 to-charcoal rounded-2xl p-4 text-white text-center">
           <p className="text-xs uppercase tracking-widest opacity-80">Rotación {game.rotationNumber} completada</p>
           <h2 className="text-xl font-black mt-1">
