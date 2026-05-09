@@ -186,9 +186,14 @@ export default function GamePage() {
     prevPlayerStatusesRef.current = snapshot
   }, [players])
 
-  // ── Anti-trampa: detectar si el jugador sale durante su turno ─────────────────
+  // ── Anti-trampa: detectar si el jugador sale durante la categoría ─────────────
   useEffect(() => {
-    if (!isMyTurn || game?.status !== 'player_turn' || caughtCheating) return
+    const myPlayer = players.find(p => p.uid === profile?.uid)
+    const isActivePlayer = !isAdmin && myPlayer?.status === 'active'
+    // Vigilar durante toda la categoría: mientras hay turnos activos o pausados
+    const isCategoryLive = game?.status === 'player_turn' || game?.status === 'turn_paused'
+
+    if (!isActivePlayer || !isCategoryLive || caughtCheating) return
 
     cheatHandledRef.current = false
 
@@ -207,7 +212,6 @@ export default function GamePage() {
       if (document.hidden) handleCheat()
     }
     function onBlur() {
-      // Pequeño delay para evitar falsos positivos (click en barra del browser, etc.)
       blurTimer = setTimeout(() => handleCheat(), 800)
     }
     function onFocus() {
@@ -224,7 +228,7 @@ export default function GamePage() {
       window.removeEventListener('blur', onBlur)
       window.removeEventListener('focus', onFocus)
     }
-  }, [isMyTurn, game?.status, caughtCheating, gameId, profile])
+  }, [isAdmin, players, game?.status, caughtCheating, gameId, profile])
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
