@@ -50,8 +50,8 @@ export default function Home() {
       <div className="text-center mb-8">
         <img src="/logo.svg" alt="BASTA" className="w-32 h-32 sm:w-40 sm:h-40 mx-auto mb-4 drop-shadow-2xl" />
         <h1
-          className="text-6xl sm:text-8xl font-display font-semibold text-white drop-shadow-lg"
-          style={{ letterSpacing: '0.12em' }}
+          className="text-6xl sm:text-8xl font-display font-semibold drop-shadow-lg"
+          style={{ letterSpacing: '0.12em', color: 'var(--c-title)' }}
         >
           ¡BASTA!
         </h1>
@@ -82,7 +82,7 @@ export default function Home() {
               <button
                 onClick={() => navigate('/admin')}
                 className="flex-1 text-white font-display font-semibold text-lg py-4 rounded-2xl shadow-lg transition-all hover:scale-105 active:scale-95"
-                style={{ background: 'rgba(27,231,255,0.15)', border: '1px solid rgba(27,231,255,0.35)', color: '#1BE7FF' }}
+                style={{ background: 'var(--c-secondary-bg)', border: '1px solid var(--c-secondary-border)', color: 'var(--c-secondary-text)' }}
               >
                 ⚙️ Categorías
               </button>
@@ -99,7 +99,7 @@ export default function Home() {
               <button
                 onClick={() => navigate('/profile')}
                 className="flex-1 font-display font-semibold text-lg py-4 rounded-2xl shadow-lg transition-all hover:scale-105 active:scale-95"
-                style={{ background: 'rgba(27,231,255,0.15)', border: '1px solid rgba(27,231,255,0.35)', color: '#1BE7FF' }}
+                style={{ background: 'var(--c-secondary-bg)', border: '1px solid var(--c-secondary-border)', color: 'var(--c-secondary-text)' }}
               >
                 👤 Mi perfil
               </button>

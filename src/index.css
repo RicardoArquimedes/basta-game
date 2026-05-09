@@ -13,6 +13,10 @@
   --c-text3:    #555555;
   --c-input:    #2a2a2a;
   --c-input-border: #444444;
+  --c-title:    #ffffff;
+  --c-secondary-bg:     rgba(27,231,255,0.12);
+  --c-secondary-border: rgba(27,231,255,0.35);
+  --c-secondary-text:   #1BE7FF;
 }
 
 /* ── Tema claro ───────────────────────────────────────────────────────── */
@@ -26,6 +30,10 @@
   --c-text3:    #999999;
   --c-input:    #f5f5f5;
   --c-input-border: #d0d0d0;
+  --c-title:    #111111;
+  --c-secondary-bg:     rgba(255,87,20,0.08);
+  --c-secondary-border: rgba(255,87,20,0.5);
+  --c-secondary-text:   #FF5714;
 }
 
 @layer base {

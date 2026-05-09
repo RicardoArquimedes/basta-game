@@ -16,7 +16,7 @@ export default function Navbar() {
   async function handleSignOut() {
     reset()
     await signOut()
-    navigate('/')
+    navigate('/auth')
   }
 
   return (
