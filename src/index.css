@@ -7,9 +7,10 @@
     -webkit-tap-highlight-color: transparent;
   }
   body {
-    @apply antialiased font-body;
+    @apply antialiased;
+    font-family: 'Nunito', sans-serif;
   }
   h1, h2, h3 {
-    @apply font-display;
+    font-family: 'Fredoka', sans-serif;
   }
 }
