@@ -247,14 +247,14 @@ export default function GamePage() {
           ¡No hagas trampa!
         </h1>
         <p className="text-center mb-6 max-w-xs" style={{ color: '#888' }}>
-          Saliste de la ventana durante tu turno. Has sido <span style={{ color: '#FF5714', fontWeight: 700 }}>eliminado</span> de la partida.
+          Saliste de la ventana durante tu turno. Quedas <span style={{ color: '#FF5714', fontWeight: 700 }}>fuera de esta partida</span>.
         </p>
         <div
           className="rounded-2xl px-6 py-4 text-center max-w-xs"
           style={{ background: 'rgba(255,87,20,0.12)', border: '1px solid rgba(255,87,20,0.3)' }}
         >
           <p className="text-sm" style={{ color: '#FF5714' }}>
-            Puedes seguir viendo la partida pero ya no participas en ella.
+            Puedes seguir viendo el resto del juego. En la próxima partida podrás volver a jugar normalmente.
           </p>
         </div>
       </div>
