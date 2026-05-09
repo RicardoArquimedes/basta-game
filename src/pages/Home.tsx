@@ -147,8 +147,8 @@ export default function Home() {
             <label className="text-sm font-medium text-gray-600 block mb-1">Código de partida</label>
             <input value={code} onChange={e => setCode(e.target.value.toUpperCase())}
               placeholder="Ej: ABC123" maxLength={6}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-center text-xl font-bold tracking-widest focus:outline-none"
-              style={{ '--tw-ring-color': '#016FB9' } as React.CSSProperties} />
+              className="w-full rounded-xl px-3 py-2 text-center text-xl font-bold tracking-widest focus:outline-none"
+              style={{ background: 'var(--c-input)', border: '2px solid var(--c-border)', color: 'var(--c-text)' }} />
           </div>
           {error && <p className="text-red-500 text-sm">{error}</p>}
           <div className="flex gap-2">
