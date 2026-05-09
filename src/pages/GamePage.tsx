@@ -102,6 +102,7 @@ export default function GamePage() {
   const [selectedCatId, setSelectedCatId] = useState('')
   const [showCatPicker, setShowCatPicker] = useState(false)
   const [caughtCheating, setCaughtCheating] = useState(false)
+  const [copied, setCopied] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   // Track which turn we've already handled to avoid double-submit
@@ -269,16 +270,33 @@ export default function GamePage() {
     return (
       <div className="max-w-lg mx-auto p-4 space-y-4">
         {/* Código */}
-        <div className="bg-charcoal rounded-2xl p-5 text-white text-center">
-          <p className="text-xs uppercase tracking-widest opacity-60 mb-1 font-body">Código de partida</p>
-          <p className="text-4xl font-display font-semibold tracking-widest text-saffron-400">{game.code}</p>
-          <p className="text-sm opacity-60 mt-1">{realPlayers.length}/{game.maxPlayers} jugadores</p>
+        <div className="rounded-2xl p-5 text-center" style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
+          <p className="text-xs uppercase tracking-widest mb-2" style={{ color: 'var(--c-text3)' }}>Código de partida</p>
+          <div className="flex items-center justify-center gap-3">
+            <p className="text-5xl font-display font-semibold tracking-widest" style={{ color: '#FF5714' }}>
+              {game.code}
+            </p>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(game.code)
+                setCopied(true)
+                setTimeout(() => setCopied(false), 2000)
+              }}
+              className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all"
+              style={{ background: copied ? 'rgba(110,235,131,0.15)' : 'var(--c-surface2)', color: copied ? '#6EEB83' : 'var(--c-text2)' }}
+              title="Copiar código"
+            >
+              <span className="text-lg">{copied ? '✓' : '📋'}</span>
+              <span className="text-xs font-bold">{copied ? 'Copiado' : 'Copiar'}</span>
+            </button>
+          </div>
+          <p className="text-sm mt-2" style={{ color: 'var(--c-text3)' }}>{realPlayers.length}/{game.maxPlayers} jugadores</p>
         </div>
 
         {/* Panel admin */}
         {isAdmin && (
-          <div className="bg-white rounded-2xl shadow p-4 space-y-4">
-            <h3 className="font-display font-semibold text-brand-700 flex items-center gap-2">
+          <div className="rounded-2xl shadow p-4 space-y-4" style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
+            <h3 className="font-display font-semibold flex items-center gap-2" style={{ color: '#FF5714' }}>
               <span className="w-6 h-6 bg-brand-600 text-white rounded-full flex items-center justify-center text-xs">⚙</span>
               Configuración de partida
             </h3>
@@ -355,8 +373,8 @@ export default function GamePage() {
         )}
 
         {/* Lista de jugadores */}
-        <div className="bg-white rounded-2xl shadow p-4 space-y-2">
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-wide">Jugadores</p>
+        <div className="rounded-2xl shadow p-4 space-y-2" style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
+          <p className="text-xs font-bold uppercase tracking-wide" style={{ color: 'var(--c-text3)' }}>Jugadores</p>
           {realPlayers.length === 0
             ? <p className="text-gray-400 text-sm text-center py-3">Aún no hay jugadores</p>
             : realPlayers.map((p, i) => (

@@ -9,7 +9,7 @@ export default function AuthPage() {
   if (firebaseUser) return <Navigate to="/" replace />
 
   return (
-    <div className="min-h-[calc(100vh-56px)] flex flex-col items-center justify-center p-4" style={{ background: '#111111' }}>
+    <div className="min-h-[calc(100vh-56px)] flex flex-col items-center justify-center p-4" style={{ background: 'var(--c-bg)' }}>
       <div className="text-center mb-8">
         <img src="/logo.svg" alt="BASTA" className="w-24 h-24 mx-auto mb-4 drop-shadow-2xl" />
         <h1
@@ -18,7 +18,7 @@ export default function AuthPage() {
         >
           ¡BASTA!
         </h1>
-        <p className="mt-2 text-sm font-medium" style={{ color: '#1BE7FF' }}>
+        <p className="mt-2 text-sm font-medium" style={{ color: 'var(--c-text2)' }}>
           El juego de palabras más rápido
         </p>
       </div>

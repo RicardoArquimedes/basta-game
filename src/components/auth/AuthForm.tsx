@@ -51,9 +51,9 @@ export default function AuthForm({ onSuccess }: Props) {
   const AQUA  = '#1BE7FF'
 
   return (
-    <div className="rounded-2xl shadow-2xl p-6 w-full max-w-sm mx-auto" style={{ background: '#1a1a1a' }}>
+    <div className="rounded-2xl shadow-2xl p-6 w-full max-w-sm mx-auto" style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
       {/* Tab selector */}
-      <div className="flex rounded-xl overflow-hidden mb-6" style={{ border: '1px solid #333' }}>
+      <div className="flex rounded-xl overflow-hidden mb-6" style={{ border: '1px solid var(--c-border)' }}>
         {(['login', 'register', 'guest'] as Mode[]).map(m => (
           <button
             key={m}
@@ -85,8 +85,8 @@ export default function AuthForm({ onSuccess }: Props) {
               value={name}
               onChange={e => setName(e.target.value)}
               placeholder={mode === 'guest' ? 'Ej: ElRápido99' : '¿Cómo te llamas?'}
-              className="w-full rounded-xl px-4 py-3 text-white focus:outline-none transition-colors"
-              style={{ background: '#2a2a2a', border: '1px solid #444' }}
+              className="w-full rounded-xl px-4 py-3 focus:outline-none transition-colors"
+              style={{ background: 'var(--c-input)', border: '1px solid var(--c-input-border)', color: 'var(--c-text)' }}
               required
             />
           </div>
@@ -95,26 +95,26 @@ export default function AuthForm({ onSuccess }: Props) {
         {mode !== 'guest' && (
           <>
             <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: '#aaa' }}>Correo</label>
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--c-text2)' }}>Correo</label>
               <input
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="tu@correo.com"
-                className="w-full rounded-xl px-4 py-3 text-white focus:outline-none transition-colors"
-                style={{ background: '#2a2a2a', border: '1px solid #444' }}
+                className="w-full rounded-xl px-4 py-3 focus:outline-none transition-colors"
+                style={{ background: 'var(--c-input)', border: '1px solid var(--c-input-border)', color: 'var(--c-text)' }}
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: '#aaa' }}>Contraseña</label>
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--c-text2)' }}>Contraseña</label>
               <input
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 placeholder="••••••"
-                className="w-full rounded-xl px-4 py-3 text-white focus:outline-none transition-colors"
-                style={{ background: '#2a2a2a', border: '1px solid #444' }}
+                className="w-full rounded-xl px-4 py-3 focus:outline-none transition-colors"
+                style={{ background: 'var(--c-input)', border: '1px solid var(--c-input-border)', color: 'var(--c-text)' }}
                 required
               />
             </div>
@@ -142,9 +142,9 @@ export default function AuthForm({ onSuccess }: Props) {
       </form>
 
       {mode === 'login' && (
-        <p className="text-center text-sm mt-4" style={{ color: '#666' }}>
+        <p className="text-center text-sm mt-4" style={{ color: 'var(--c-text2)' }}>
           ¿No tienes cuenta?{' '}
-          <button onClick={() => { setMode('register'); clear() }} className="font-semibold hover:underline" style={{ color: AQUA }}>
+          <button onClick={() => { setMode('register'); clear() }} className="font-semibold hover:underline" style={{ color: '#1BE7FF' }}>
             Regístrate
           </button>
         </p>

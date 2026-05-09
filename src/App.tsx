@@ -5,6 +5,7 @@ import { auth } from './firebase'
 import { getOrCreateProfile, signOut } from './services/authService'
 import { seedCategories } from './services/categoryService'
 import { useAuthStore } from './store/authStore'
+import { useThemeStore } from './store/themeStore'
 import Navbar from './components/layout/Navbar'
 import Home from './pages/Home'
 import AuthPage from './pages/AuthPage'
@@ -86,6 +87,9 @@ function RequireAuth({ children }: { children: JSX.Element }) {
 
 export default function App() {
   const { setFirebaseUser, setProfile, setLoading, setError, error } = useAuthStore()
+  const { apply } = useThemeStore()
+
+  useEffect(() => { apply() }, [])
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async user => {
@@ -114,7 +118,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen" style={{ background: 'var(--c-bg)' }}>
         <Navbar />
         <Routes>
           <Route path="/auth" element={<AuthPage />} />

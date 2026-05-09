@@ -46,7 +46,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-56px)] flex flex-col items-center justify-center p-4" style={{ background: '#111111' }}>
+    <div className="min-h-[calc(100vh-56px)] flex flex-col items-center justify-center p-4" style={{ background: 'var(--c-bg)' }}>
       <div className="text-center mb-8">
         <img src="/logo.svg" alt="BASTA" className="w-32 h-32 sm:w-40 sm:h-40 mx-auto mb-4 drop-shadow-2xl" />
         <h1
@@ -55,7 +55,7 @@ export default function Home() {
         >
           ¡BASTA!
         </h1>
-        <p className="mt-3" style={{ color: '#888' }}>
+        <p className="mt-3" style={{ color: 'var(--c-text2)' }}>
           Hola, <span className="font-bold" style={{ color: '#E8AA14' }}>{profile.displayName}</span>
           {isAdmin && (
             <span className="ml-2 text-white text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: '#FF5714' }}>
@@ -109,10 +109,10 @@ export default function Home() {
       )}
 
       {mode === 'create' && (
-        <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm space-y-4">
+        <div className="rounded-2xl shadow-xl p-6 w-full max-w-sm space-y-4" style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
           <h2 className="text-xl font-display font-semibold" style={{ color: '#FF5714' }}>Nueva partida</h2>
           <div>
-            <label className="text-sm font-medium text-gray-600 block mb-2">Máximo de jugadores</label>
+            <label className="text-sm font-medium block mb-2" style={{ color: 'var(--c-text2)' }}>Máximo de jugadores</label>
             <div className="flex gap-2 flex-wrap">
               {[2,3,4,5,6,7,8,9,10].map(n => (
                 <button key={n} onClick={() => setMaxPlayers(n)}
@@ -141,7 +141,7 @@ export default function Home() {
       )}
 
       {mode === 'join' && (
-        <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm space-y-4">
+        <div className="rounded-2xl shadow-xl p-6 w-full max-w-sm space-y-4" style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
           <h2 className="text-xl font-display font-semibold" style={{ color: '#FF5714' }}>Unirse a partida</h2>
           <div>
             <label className="text-sm font-medium text-gray-600 block mb-1">Código de partida</label>
