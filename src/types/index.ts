@@ -2,8 +2,9 @@ export type GameStatus =
   | 'lobby'
   | 'category_reveal'
   | 'player_turn'
-  | 'turn_paused'    // admin pausó entre turnos
-  | 'rotation_end'   // fin de rotación
+  | 'turn_paused'      // admin pausó entre turnos
+  | 'rotation_end'     // fin de rotación
+  | 'category_done'    // todas las letras usadas en esta categoría
   | 'game_over'
 
 export type PlayerStatus = 'active' | 'eliminated'
@@ -76,5 +77,6 @@ export interface Game {
   // Categoría
   currentCategory: string
   currentCategoryId: string
+  categoryNumber: number
   createdAt: number
 }

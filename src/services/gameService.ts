@@ -34,6 +34,7 @@ export async function createGame(adminId: string, adminName: string, maxPlayers:
     answerSeconds: 10,
     pauseNextTurn: false,
     currentCategory: '', currentCategoryId: '',
+    categoryNumber: 1,
     createdAt: Date.now(),
   }
   const ref = await addDoc(collection(db, 'games'), data)
@@ -201,7 +202,7 @@ export async function continueNextRotation(gameId: string, game: Game, players: 
   await scoreRotation(gameId, game.rotationNumber, activePlayers)
 
   if (game.availableLetters.length === 0) {
-    await updateDoc(doc(db, 'games', gameId), { status: 'game_over' })
+    await updateDoc(doc(db, 'games', gameId), { status: 'category_done' })
     return
   }
 
@@ -273,6 +274,56 @@ export async function validateAnswer(gameId: string, answerId: string, isValid: 
 
 export async function eliminatePlayer(gameId: string, uid: string) {
   await updateDoc(doc(db, 'games', gameId, 'players', uid), { status: 'eliminated' })
+}
+
+export async function endCategory(gameId: string, game: Game, players: Player[]) {
+  await scoreRotation(gameId, game.rotationNumber, players.filter(p => p.status === 'active'))
+  await updateDoc(doc(db, 'games', gameId), { status: 'category_done' })
+}
+
+export async function startNewCategory(
+  gameId: string,
+  category: string,
+  categoryId: string,
+  allPlayers: Player[],
+  excludedLetters: string[],
+  currentCategoryNumber: number,
+) {
+  const gameSnap = await getDoc(doc(db, 'games', gameId))
+  const currentRotation = gameSnap.data()?.rotationNumber ?? 0
+
+  const order = shuffle(allPlayers.map(p => p.uid))
+  const available = ALL_LETTERS.filter(l => !excludedLetters.includes(l))
+
+  const batch = writeBatch(db)
+  for (const player of allPlayers) {
+    batch.update(doc(db, 'games', gameId, 'players', player.uid), { status: 'active' })
+  }
+  batch.update(doc(db, 'games', gameId), {
+    status: 'category_reveal',
+    currentCategory: category,
+    currentCategoryId: categoryId,
+    categoryNumber: currentCategoryNumber + 1,
+    availableLetters: available,
+    usedLetters: [],
+    turnOrder: order,
+    turnIndex: 0,
+    currentTurnUid: order[0],
+    letterTimerStartAt: null,
+    answerTimerStartAt: null,
+    currentLetter: null,
+    rotationNumber: currentRotation + 1,
+    pauseNextTurn: false,
+  })
+  await batch.commit()
+}
+
+export async function undoEndCategory(gameId: string) {
+  await updateDoc(doc(db, 'games', gameId), { status: 'rotation_end' })
+}
+
+export async function undoEndGame(gameId: string) {
+  await updateDoc(doc(db, 'games', gameId), { status: 'category_done' })
 }
 
 export async function endGame(gameId: string, game: Game, players: Player[]) {

@@ -6,7 +6,8 @@ import {
   subscribeGame, subscribePlayers, subscribeAnswers,
   startGame, beginTurns, playerSelectLetter, submitAnswer,
   continueNextRotation, validateAnswer, eliminatePlayer,
-  endGame, updateExcludedLetters, setPauseNextTurn, resumeFromPause, updateTimers,
+  endGame, endCategory, startNewCategory, undoEndCategory, undoEndGame,
+  updateExcludedLetters, setPauseNextTurn, resumeFromPause, updateTimers,
 } from '../services/gameService'
 import { getCategories } from '../services/categoryService'
 import { recordGameStats } from '../services/authService'
@@ -155,6 +156,14 @@ export default function GamePage() {
     getCategories().then(cats => setCategories(cats.filter(c => c.isActive)))
   }, [])
 
+  // Reset cheat state when a new category starts so the player can participate again
+  useEffect(() => {
+    if (game?.currentCategoryId) {
+      setCaughtCheating(false)
+      cheatHandledRef.current = false
+    }
+  }, [game?.currentCategoryId])
+
   // ── Anti-trampa: detectar si el jugador sale durante su turno ─────────────────
   useEffect(() => {
     if (!isMyTurn || game?.status !== 'player_turn' || caughtCheating) return
@@ -231,6 +240,15 @@ export default function GamePage() {
     setShowCatPicker(false)
   }
 
+  async function handleStartNewCategory() {
+    if (!gameId || !selectedCatId || !game) return
+    const cat = categories.find(c => c.id === selectedCatId)
+    if (!cat) return
+    await startNewCategory(gameId, cat.name, cat.id, players, game.excludedLetters, game.categoryNumber)
+    setShowCatPicker(false)
+    setSelectedCatId('')
+  }
+
   if (!game || !profile) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-56px)]">
@@ -250,17 +268,25 @@ export default function GamePage() {
         >
           ¡No hagas trampa!
         </h1>
-        <p className="text-center mb-6 max-w-xs" style={{ color: '#888' }}>
-          Saliste de la ventana durante tu turno. Quedas <span style={{ color: '#FF5714', fontWeight: 700 }}>fuera de esta partida</span>.
+        <p className="text-center mb-4 max-w-xs" style={{ color: '#888' }}>
+          Saliste de la ventana durante tu turno. Quedas{' '}
+          <span style={{ color: '#FF5714', fontWeight: 700 }}>fuera de esta categoría</span>.
         </p>
         <div
-          className="rounded-2xl px-6 py-4 text-center max-w-xs"
+          className="rounded-2xl px-6 py-4 text-center max-w-xs mb-6"
           style={{ background: 'rgba(255,87,20,0.12)', border: '1px solid rgba(255,87,20,0.3)' }}
         >
           <p className="text-sm" style={{ color: '#FF5714' }}>
-            Puedes seguir viendo el resto del juego. En la próxima partida podrás volver a jugar normalmente.
+            Puedes seguir viendo el juego. En la próxima categoría podrás volver a participar.
           </p>
         </div>
+        <button
+          onClick={() => setCaughtCheating(false)}
+          className="px-10 py-3 rounded-xl font-display font-semibold text-white text-lg transition-all hover:scale-105 active:scale-95"
+          style={{ background: '#FF5714' }}
+        >
+          OK, entendido
+        </button>
       </div>
     )
   }
@@ -412,20 +438,23 @@ export default function GamePage() {
   if (game.status === 'category_reveal') {
     return (
       <div className="max-w-lg mx-auto p-4 flex flex-col items-center justify-center min-h-[60vh] space-y-6">
-        <CategoryCard category={game.currentCategory} roundNumber={1} />
+        <CategoryCard category={game.currentCategory} roundNumber={game.categoryNumber ?? 1} />
         <div className="text-center space-y-2">
-          <p className="text-gray-500 text-sm">
-            {game.availableLetters.length} letras · {activePlayers.length} jugadores
+          <p className="text-sm" style={{ color: 'var(--c-text2)' }}>
+            {game.availableLetters.length} letras · {players.length} jugadores
           </p>
-          <p className="text-gray-400 text-xs">Orden: {game.turnOrder.map(uid => players.find(p => p.uid === uid)?.displayName).join(' → ')}</p>
+          <p className="text-xs" style={{ color: 'var(--c-text3)' }}>
+            Orden: {game.turnOrder.map(uid => players.find(p => p.uid === uid)?.displayName).join(' → ')}
+          </p>
         </div>
         {isAdmin && (
           <button onClick={() => beginTurns(gameId!)}
-            className="bg-brand-600 hover:bg-brand-700 text-white font-black px-10 py-4 rounded-2xl text-lg transition-all hover:scale-105 active:scale-95 shadow-lg">
+            className="text-white font-display font-semibold px-10 py-4 rounded-2xl text-lg transition-all hover:scale-105 active:scale-95 shadow-lg"
+            style={{ background: '#FF5714' }}>
             ▶ ¡Empezar!
           </button>
         )}
-        {!isAdmin && <p className="text-gray-400 text-sm animate-pulse">El admin iniciará el juego...</p>}
+        {!isAdmin && <p className="text-sm animate-pulse" style={{ color: 'var(--c-text3)' }}>El admin iniciará el juego...</p>}
       </div>
     )
   }
@@ -624,6 +653,18 @@ export default function GamePage() {
                 ⏭ Saltar turno
               </button>
             </div>
+            <div className="flex gap-2">
+              <button onClick={() => endCategory(gameId!, game, players)}
+                className="flex-1 font-bold py-2 rounded-xl text-sm transition-colors"
+                style={{ background: 'var(--c-surface2)', color: 'var(--c-text2)' }}>
+                🏁 Terminar categoría
+              </button>
+              <button onClick={() => endGame(gameId!, game, players)}
+                className="flex-1 font-bold py-2 rounded-xl text-sm transition-colors"
+                style={{ background: 'var(--c-surface2)', color: 'var(--c-text3)' }}>
+                🚪 Terminar partida
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -787,19 +828,104 @@ export default function GamePage() {
                 ▶ Continuar ({game.availableLetters.length} letras restantes)
               </button>
             )}
-            <button onClick={() => endGame(gameId!, game, players)}
-              className="w-full font-bold py-3 rounded-xl transition-colors text-sm"
+            <button onClick={() => endCategory(gameId!, game, players)}
+              className="w-full font-bold py-3 rounded-xl transition-colors"
               style={noLettersLeft
                 ? { background: '#FF5714', color: 'white', fontSize: '1.1rem' }
                 : { background: 'var(--c-surface2)', color: 'var(--c-text2)' }}>
-              🏁 {noLettersLeft ? '¡Ver resultados finales!' : 'Terminar juego aquí'}
+              🏁 {noLettersLeft ? 'Terminar categoría' : 'Terminar categoría aquí'}
+            </button>
+            <button onClick={() => endGame(gameId!, game, players)}
+              className="w-full font-bold py-2 rounded-xl transition-colors text-sm"
+              style={{ background: 'var(--c-surface2)', color: 'var(--c-text3)' }}>
+              🚪 Terminar partida
             </button>
           </div>
         )}
 
         {!isAdmin && (
           <p className="text-center text-sm animate-pulse" style={{ color: 'var(--c-text3)' }}>
-            {noLettersLeft ? '¡Se acabaron las letras! Esperando resultados...' : 'Esperando al admin...'}
+            {noLettersLeft ? '¡Se acabaron las letras! Esperando al admin...' : 'Esperando al admin...'}
+          </p>
+        )}
+      </div>
+    )
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // CATEGORY DONE — todas las letras de esta categoría agotadas
+  // ════════════════════════════════════════════════════════════════════════════
+  if (game.status === 'category_done') {
+    const sortedPlayers = [...players].sort((a, b) => b.score - a.score)
+
+    return (
+      <div className="max-w-lg mx-auto p-4 space-y-4">
+        <div className="rounded-2xl p-5 text-center text-white" style={{ background: 'linear-gradient(135deg, #FF5714, #333)' }}>
+          <p className="text-xs uppercase tracking-widest opacity-75 mb-1">Categoría {game.categoryNumber} completada</p>
+          <h2 className="text-2xl font-display font-semibold">{game.currentCategory}</h2>
+          <p className="text-sm opacity-75 mt-1">
+            {game.usedLetters.length} letra{game.usedLetters.length !== 1 ? 's' : ''} usada{game.usedLetters.length !== 1 ? 's' : ''}
+          </p>
+        </div>
+
+        {/* Marcador acumulado */}
+        <div className="rounded-2xl shadow p-4 space-y-1.5" style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
+          <p className="text-xs font-bold uppercase mb-2" style={{ color: 'var(--c-text3)' }}>Marcador acumulado</p>
+          {sortedPlayers.map((p, i) => (
+            <div key={p.uid} className="flex items-center gap-2 rounded-xl px-3 py-2"
+              style={i === 0
+                ? { background: 'rgba(232,170,20,0.15)', border: '2px solid #E8AA14' }
+                : { border: '1px solid var(--c-border)' }}>
+              <span className="text-base">{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}</span>
+              <span className="flex-1 font-bold truncate" style={{ color: 'var(--c-text)' }}>{p.displayName}</span>
+              <span className="font-black tabular-nums" style={{ color: '#FF5714' }}>{p.score}pts</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Admin: nueva categoría */}
+        {isAdmin && (
+          <div className="rounded-2xl shadow p-4 space-y-3" style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
+            <p className="text-xs font-bold uppercase tracking-wide" style={{ color: 'var(--c-text3)' }}>⚙️ Controles admin</p>
+
+            <div>
+              <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--c-text2)' }}>Categoría para la siguiente ronda</p>
+              <select value={selectedCatId} onChange={e => setSelectedCatId(e.target.value)}
+                className="w-full rounded-xl px-3 py-2.5 text-sm focus:outline-none"
+                style={{ background: 'var(--c-input)', border: '1px solid var(--c-border)', color: 'var(--c-text)' }}>
+                <option value="">— Elige una categoría —</option>
+                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+
+            <button
+              onClick={handleStartNewCategory}
+              disabled={!selectedCatId}
+              className="w-full disabled:opacity-40 text-white font-display font-semibold py-3.5 rounded-xl text-lg transition-all hover:scale-[1.02] active:scale-95"
+              style={{ background: '#FF5714' }}>
+              🎲 Nueva categoría (todos activos)
+            </button>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => undoEndCategory(gameId!)}
+                className="flex-1 font-bold py-2 rounded-xl text-sm transition-colors"
+                style={{ background: 'var(--c-surface2)', color: 'var(--c-text2)' }}>
+                ↩ Deshacer terminar categoría
+              </button>
+              <button
+                onClick={() => endGame(gameId!, game, players)}
+                className="flex-1 font-bold py-2 rounded-xl text-sm transition-colors"
+                style={{ background: 'var(--c-surface2)', color: 'var(--c-text3)' }}>
+                🚪 Terminar partida
+              </button>
+            </div>
+          </div>
+        )}
+
+        {!isAdmin && (
+          <p className="text-center text-sm animate-pulse" style={{ color: 'var(--c-text3)' }}>
+            Esperando al admin para la siguiente categoría...
           </p>
         )}
       </div>
@@ -831,6 +957,14 @@ export default function GamePage() {
             </div>
           ))}
         </div>
+        {isAdmin && (
+          <button
+            onClick={() => undoEndGame(gameId!)}
+            className="w-full font-bold py-2.5 rounded-xl transition-colors text-sm"
+            style={{ background: 'var(--c-surface2)', color: 'var(--c-text2)' }}>
+            ↩ Deshacer terminar partida
+          </button>
+        )}
         <button onClick={() => navigate('/')}
           className="w-full text-white font-bold py-3 rounded-xl transition-colors"
           style={{ background: '#FF5714' }}>
