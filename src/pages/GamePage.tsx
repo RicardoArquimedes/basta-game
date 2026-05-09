@@ -759,14 +759,16 @@ export default function GamePage() {
         </div>
 
         {/* Marcador */}
-        <div className="bg-white rounded-2xl shadow p-4 space-y-1.5">
-          <p className="text-xs font-bold text-gray-400 uppercase mb-2">Marcador</p>
+        <div className="rounded-2xl shadow p-4 space-y-1.5" style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
+          <p className="text-xs font-bold uppercase mb-2" style={{ color: 'var(--c-text3)' }}>Marcador</p>
           {sortedPlayers.map((p, i) => (
-            <div key={p.uid} className={`flex items-center gap-2 rounded-xl px-3 py-2
-              ${i === 0 ? 'bg-yellow-50 border-2 border-yellow-300' : 'border border-gray-100'}`}>
+            <div key={p.uid} className="flex items-center gap-2 rounded-xl px-3 py-2"
+              style={i === 0
+                ? { background: 'rgba(232,170,20,0.15)', border: '2px solid #E8AA14' }
+                : { border: '1px solid var(--c-border)' }}>
               <span className="text-base">{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`}</span>
-              <span className="flex-1 font-bold truncate">{p.displayName}</span>
-              <span className="font-black text-brand-700 tabular-nums">{p.score}pts</span>
+              <span className="flex-1 font-bold truncate" style={{ color: 'var(--c-text)' }}>{p.displayName}</span>
+              <span className="font-black tabular-nums" style={{ color: '#FF5714' }}>{p.score}pts</span>
               {isAdmin && p.status === 'active' && (
                 <button onClick={() => eliminatePlayer(gameId!, p.uid)}
                   className="text-xs text-red-400 hover:text-red-600 ml-1">✕</button>
@@ -780,22 +782,23 @@ export default function GamePage() {
           <div className="space-y-2">
             {!noLettersLeft && (
               <button onClick={() => continueNextRotation(gameId!, game, players)}
-                className="w-full bg-brand-600 hover:bg-brand-700 text-white font-black py-4 rounded-2xl text-lg transition-all hover:scale-105 shadow-lg">
+                className="w-full text-white font-black py-4 rounded-2xl text-lg transition-all hover:scale-105 shadow-lg"
+                style={{ background: '#FF5714' }}>
                 ▶ Continuar ({game.availableLetters.length} letras restantes)
               </button>
             )}
             <button onClick={() => endGame(gameId!, game, players)}
-              className={`w-full font-bold py-3 rounded-xl transition-colors
-                ${noLettersLeft
-                  ? 'bg-brand-600 hover:bg-brand-700 text-white text-lg'
-                  : 'bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm'}`}>
+              className="w-full font-bold py-3 rounded-xl transition-colors text-sm"
+              style={noLettersLeft
+                ? { background: '#FF5714', color: 'white', fontSize: '1.1rem' }
+                : { background: 'var(--c-surface2)', color: 'var(--c-text2)' }}>
               🏁 {noLettersLeft ? '¡Ver resultados finales!' : 'Terminar juego aquí'}
             </button>
           </div>
         )}
 
         {!isAdmin && (
-          <p className="text-center text-gray-400 text-sm animate-pulse">
+          <p className="text-center text-sm animate-pulse" style={{ color: 'var(--c-text3)' }}>
             {noLettersLeft ? '¡Se acabaron las letras! Esperando resultados...' : 'Esperando al admin...'}
           </p>
         )}
@@ -810,24 +813,27 @@ export default function GamePage() {
     const sorted = [...players].sort((a, b) => b.score - a.score)
     return (
       <div className="max-w-lg mx-auto p-4 space-y-4">
-        <div className="text-center bg-gradient-to-br from-paprika-500 to-charcoal rounded-2xl p-6 text-white">
+        <div className="text-center rounded-2xl p-6 text-white" style={{ background: 'linear-gradient(135deg, #FF5714, #111111)' }}>
           <div className="text-5xl mb-2">🏆</div>
-          <h1 className="text-3xl font-black">¡Juego terminado!</h1>
+          <h1 className="text-3xl font-display font-semibold">¡Juego terminado!</h1>
           <p className="opacity-75 mt-1 text-sm">{game.rotationNumber} rotaciones · {game.usedLetters.length} letras usadas</p>
         </div>
-        <div className="bg-white rounded-2xl shadow p-4 space-y-2">
-          <p className="text-xs font-bold text-gray-400 uppercase mb-3">Clasificación final</p>
+        <div className="rounded-2xl shadow p-4 space-y-2" style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
+          <p className="text-xs font-bold uppercase mb-3" style={{ color: 'var(--c-text3)' }}>Clasificación final</p>
           {sorted.map((p, i) => (
-            <div key={p.uid} className={`flex items-center gap-3 rounded-xl px-3 py-3
-              ${i === 0 ? 'bg-yellow-50 border-2 border-yellow-300' : 'border border-gray-100'}`}>
+            <div key={p.uid} className="flex items-center gap-3 rounded-xl px-3 py-3"
+              style={i === 0
+                ? { background: 'rgba(232,170,20,0.15)', border: '2px solid #E8AA14' }
+                : { border: '1px solid var(--c-border)' }}>
               <span className="text-2xl">{i === 0 ? '🏆' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`}</span>
-              <span className="flex-1 font-bold text-gray-800 truncate">{p.displayName}</span>
-              <span className="font-black text-brand-700 tabular-nums text-lg">{p.score}pts</span>
+              <span className="flex-1 font-bold truncate" style={{ color: 'var(--c-text)' }}>{p.displayName}</span>
+              <span className="font-black tabular-nums text-lg" style={{ color: '#FF5714' }}>{p.score}pts</span>
             </div>
           ))}
         </div>
         <button onClick={() => navigate('/')}
-          className="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 rounded-xl transition-colors">
+          className="w-full text-white font-bold py-3 rounded-xl transition-colors"
+          style={{ background: '#FF5714' }}>
           Volver al inicio
         </button>
       </div>
