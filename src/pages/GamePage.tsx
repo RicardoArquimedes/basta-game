@@ -259,6 +259,16 @@ export default function GamePage() {
 
   // ── Overlay trampa ────────────────────────────────────────────────────────────
   if (caughtCheating) {
+    async function handleCheatOk() {
+      setCaughtCheating(false)
+      // Si el turno sigue siendo del jugador, forzar submit vacío para avanzar el turno
+      if (gameId && game && isMyTurn && !answerHandled) {
+        setLetterHandled(true)
+        setAnswerHandled(true)
+        await submitAnswer(gameId, game, players, '', true)
+      }
+    }
+
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center p-6" style={{ background: '#111111' }}>
         <img src="/logo.svg" alt="BASTA" className="w-28 h-28 mb-6 animate-bounce" />
@@ -281,7 +291,7 @@ export default function GamePage() {
           </p>
         </div>
         <button
-          onClick={() => setCaughtCheating(false)}
+          onClick={handleCheatOk}
           className="px-10 py-3 rounded-xl font-display font-semibold text-white text-lg transition-all hover:scale-105 active:scale-95"
           style={{ background: '#FF5714' }}
         >
