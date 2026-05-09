@@ -14,7 +14,7 @@ import ProfilePage from './pages/ProfilePage'
 
 function FullScreenLoader() {
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center bg-charcoal z-50">
+    <div className="fixed inset-0 flex flex-col items-center justify-center z-50" style={{ background: '#353531' }}>
       <img src="/logo.svg" alt="BASTA" className="w-28 h-28 mb-4 animate-bounce-in" />
       <p className="text-4xl font-display font-semibold text-white tracking-wide mb-6">¡BASTA!</p>
       <div className="h-8 w-8 border-4 border-brand-400 border-t-transparent rounded-full animate-spin" />
@@ -31,7 +31,7 @@ function ErrorScreen({ message }: { message: string }) {
   const isPermissions = message.toLowerCase().includes('permission')
 
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center bg-charcoal z-50 p-6">
+    <div className="fixed inset-0 flex flex-col items-center justify-center z-50 p-6" style={{ background: '#353531' }}>
       <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm text-center space-y-4">
         <div className="text-5xl">⚠️</div>
         <h2 className="text-xl font-black text-gray-800">Algo salió mal</h2>
