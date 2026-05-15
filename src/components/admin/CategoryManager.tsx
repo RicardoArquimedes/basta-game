@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { Category } from '../../types'
 import {
   addCategory, toggleCategory, toggleExcludeFromRandom,
@@ -23,14 +23,14 @@ export default function CategoryManager({ categories, adminUid, onRefresh }: Pro
   // Confirmación eliminar
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
-  // Reordenamiento
-  const [reordering, setReordering] = useState(false)
+  // Drag & drop
+  const dragIndex = useRef<number | null>(null)
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault()
     if (!newName.trim()) return
     setSaving(true)
-    // Nueva categoría va al final del orden actual
     const maxOrder = categories.reduce((m, c, i) => Math.max(m, c.order ?? i), -1)
     await addCategory(newName.trim(), adminUid, maxOrder + 1)
     setNewName('')
@@ -69,16 +69,41 @@ export default function CategoryManager({ categories, adminUid, onRefresh }: Pro
     onRefresh()
   }
 
-  async function handleMove(index: number, direction: 'up' | 'down') {
-    const j = direction === 'up' ? index - 1 : index + 1
-    if (j < 0 || j >= categories.length) return
-    setReordering(true)
-    // Normalizar orders según posición actual y luego intercambiar
-    const normalized = categories.map((c, i) => ({ id: c.id, order: i }))
-    ;[normalized[index].order, normalized[j].order] = [normalized[j].order, normalized[index].order]
-    await reorderCategories(normalized)
+  // ── Drag & drop handlers ────────────────────────────────────────────────────
+  function handleDragStart(index: number) {
+    dragIndex.current = index
+  }
+
+  function handleDragOver(e: React.DragEvent, index: number) {
+    e.preventDefault()
+    if (dragIndex.current !== null && dragIndex.current !== index) {
+      setDragOverIndex(index)
+    }
+  }
+
+  function handleDragLeave() {
+    setDragOverIndex(null)
+  }
+
+  async function handleDrop(dropIndex: number) {
+    const fromIndex = dragIndex.current
+    dragIndex.current = null
+    setDragOverIndex(null)
+    if (fromIndex === null || fromIndex === dropIndex) return
+
+    // Reordenar array localmente
+    const reordered = [...categories]
+    const [moved] = reordered.splice(fromIndex, 1)
+    reordered.splice(dropIndex, 0, moved)
+
+    // Persistir todos los nuevos órdenes
+    await reorderCategories(reordered.map((c, i) => ({ id: c.id, order: i })))
     onRefresh()
-    setReordering(false)
+  }
+
+  function handleDragEnd() {
+    dragIndex.current = null
+    setDragOverIndex(null)
   }
 
   const activeCount = categories.filter(c => c.isActive && !c.excludeFromRandom).length
@@ -104,20 +129,33 @@ export default function CategoryManager({ categories, adminUid, onRefresh }: Pro
       </form>
 
       <p className="text-xs" style={{ color: 'var(--c-text3)' }}>
-        🎲 {activeCount} categorías en el sorteo aleatorio
+        🎲 {activeCount} categorías en el sorteo aleatorio · <span style={{ color: 'var(--c-text3)' }}>arrastra ⠿ para reordenar</span>
       </p>
 
       <div className="max-h-96 overflow-y-auto space-y-1 pr-1">
         {categories.map((cat, index) => {
           const isEditing = editingId === cat.id
           const isConfirmingDelete = confirmDeleteId === cat.id
-          const isFirst = index === 0
-          const isLast = index === categories.length - 1
+          const isDragTarget = dragOverIndex === index
 
           return (
-            <div key={cat.id} className="rounded-lg overflow-hidden"
-              style={{ border: '1px solid var(--c-border)' }}>
-
+            <div
+              key={cat.id}
+              draggable
+              onDragStart={() => handleDragStart(index)}
+              onDragOver={e => handleDragOver(e, index)}
+              onDragLeave={handleDragLeave}
+              onDrop={() => handleDrop(index)}
+              onDragEnd={handleDragEnd}
+              className="rounded-lg overflow-hidden transition-all"
+              style={{
+                border: isDragTarget
+                  ? '2px solid #FF5714'
+                  : '1px solid var(--c-border)',
+                transform: isDragTarget ? 'scale(1.01)' : 'scale(1)',
+                opacity: dragIndex.current === index ? 0.45 : 1,
+              }}
+            >
               {/* Fila principal */}
               <div
                 className="flex items-center gap-2 px-3 py-2"
@@ -126,30 +164,16 @@ export default function CategoryManager({ categories, adminUid, onRefresh }: Pro
                   opacity: cat.isActive ? 1 : 0.55,
                 }}
               >
-                {/* Botones de orden ↑↓ */}
-                <div className="flex flex-col gap-0.5 shrink-0">
-                  <button
-                    onClick={() => handleMove(index, 'up')}
-                    disabled={isFirst || reordering}
-                    title="Mover arriba"
-                    className="w-5 h-4 flex items-center justify-center rounded text-xs disabled:opacity-20 transition-colors leading-none"
-                    style={{ background: 'var(--c-surface)', color: 'var(--c-text3)', border: '1px solid var(--c-border)' }}
-                  >
-                    ▲
-                  </button>
-                  <button
-                    onClick={() => handleMove(index, 'down')}
-                    disabled={isLast || reordering}
-                    title="Mover abajo"
-                    className="w-5 h-4 flex items-center justify-center rounded text-xs disabled:opacity-20 transition-colors leading-none"
-                    style={{ background: 'var(--c-surface)', color: 'var(--c-text3)', border: '1px solid var(--c-border)' }}
-                  >
-                    ▼
-                  </button>
-                </div>
+                {/* Handle de arrastre */}
+                <span
+                  title="Arrastrar para reordenar"
+                  className="text-base shrink-0 cursor-grab active:cursor-grabbing select-none"
+                  style={{ color: 'var(--c-text3)', lineHeight: 1 }}
+                >
+                  ⠿
+                </span>
 
                 {isEditing ? (
-                  /* Input de edición */
                   <input
                     autoFocus
                     value={editName}
@@ -175,7 +199,6 @@ export default function CategoryManager({ categories, adminUid, onRefresh }: Pro
                 )}
 
                 {isEditing ? (
-                  /* Guardar / Cancelar edición */
                   <div className="flex gap-1 shrink-0">
                     <button
                       onClick={() => handleSaveEdit(cat.id)}
