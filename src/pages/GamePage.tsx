@@ -700,7 +700,7 @@ export default function GamePage() {
               <p className="text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: 'var(--c-text3)' }}>Categoría</p>
               <div className="flex gap-2">
                 <select value={selectedCatId} onChange={e => setSelectedCatId(e.target.value)}
-                  className="flex-1 rounded-xl px-3 py-2.5 text-sm focus:outline-none"
+                  className="flex-1 min-w-0 rounded-xl px-3 py-2.5 text-sm focus:outline-none"
                   style={{ background: 'var(--c-input)', border: '1px solid var(--c-border)', color: 'var(--c-text)' }}>
                   <option value="">— Elige una categoría —</option>
                   {categories.map(c => (
@@ -712,7 +712,7 @@ export default function GamePage() {
                 <button
                   onClick={handleOpenRandomPicker}
                   title="Elegir categoría aleatoria"
-                  className="w-11 h-11 rounded-xl text-xl flex items-center justify-center transition-all hover:scale-110 active:scale-95"
+                  className="shrink-0 w-11 h-11 rounded-xl text-xl flex items-center justify-center transition-all hover:scale-110 active:scale-95"
                   style={{ background: 'rgba(110,235,131,0.15)', border: '1px solid rgba(110,235,131,0.4)', color: '#6EEB83' }}
                 >
                   🎲
@@ -1497,7 +1497,7 @@ export default function GamePage() {
               <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--c-text2)' }}>Categoría para la siguiente ronda</p>
               <div className="flex gap-2">
                 <select value={selectedCatId} onChange={e => setSelectedCatId(e.target.value)}
-                  className="flex-1 rounded-xl px-3 py-2.5 text-sm focus:outline-none"
+                  className="flex-1 min-w-0 rounded-xl px-3 py-2.5 text-sm focus:outline-none"
                   style={{ background: 'var(--c-input)', border: '1px solid var(--c-border)', color: 'var(--c-text)' }}>
                   <option value="">— Elige una categoría —</option>
                   {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -1505,7 +1505,7 @@ export default function GamePage() {
                 <button
                   onClick={handleOpenRandomPicker}
                   title="Elegir categoría aleatoria"
-                  className="w-11 h-11 rounded-xl text-xl flex items-center justify-center transition-all hover:scale-110 active:scale-95"
+                  className="shrink-0 w-11 h-11 rounded-xl text-xl flex items-center justify-center transition-all hover:scale-110 active:scale-95"
                   style={{ background: 'rgba(110,235,131,0.15)', border: '1px solid rgba(110,235,131,0.4)', color: '#6EEB83' }}
                 >
                   🎲
