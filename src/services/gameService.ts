@@ -140,6 +140,7 @@ export async function submitAnswer(
     letter: game.currentLetter ?? '',
     answer: answer.trim(),
     rotationNumber,
+    categoryId: game.currentCategoryId,
     isValid: null,
     noAnswer,
     points: 0,

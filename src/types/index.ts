@@ -44,6 +44,7 @@ export interface GameAnswer {
   letter: string
   answer: string
   rotationNumber: number
+  categoryId: string
   isValid: boolean | null
   noAnswer: boolean
   points: number

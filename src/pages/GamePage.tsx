@@ -113,6 +113,7 @@ export default function GamePage() {
   const [cheatToast, setCheatToast] = useState<string | null>(null)
   const [newCatName, setNewCatName] = useState('')
   const [addingCat, setAddingCat] = useState(false)
+  const [bonusInputs, setBonusInputs] = useState<Record<string, number>>({})
   const inputRef = useRef<HTMLInputElement>(null)
 
   // Track which turn we've already handled to avoid double-submit
@@ -967,6 +968,14 @@ export default function GamePage() {
   if (game.status === 'category_done') {
     const sortedPlayers = [...players].sort((a, b) => b.score - a.score)
 
+    // Puntos ganados en esta categoría específica
+    const catAnswers = allAnswers.filter(a => a.categoryId === game.currentCategoryId)
+    const catScores = players.map(p => ({
+      ...p,
+      catPts: catAnswers.filter(a => a.uid === p.uid).reduce((s, a) => s + (a.points ?? 0), 0),
+    })).sort((a, b) => b.catPts - a.catPts)
+    const hasCatData = catAnswers.length > 0
+
     return (
       <div className="max-w-lg mx-auto p-4 space-y-4">
         <div className="rounded-2xl p-5 text-center text-white" style={{ background: 'linear-gradient(135deg, #FF5714, #333)' }}>
@@ -977,12 +986,30 @@ export default function GamePage() {
           </p>
         </div>
 
-        {/* Marcador acumulado */}
-        <div className="rounded-2xl shadow p-4 space-y-1.5" style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-bold uppercase" style={{ color: 'var(--c-text3)' }}>Marcador acumulado</p>
-            {isAdmin && <p className="text-xs" style={{ color: 'var(--c-text3)' }}>🎁 = +15 pts bonus</p>}
+        {/* Resultados de esta categoría */}
+        {hasCatData && (
+          <div className="rounded-2xl shadow p-4 space-y-1.5" style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
+            <p className="text-xs font-bold uppercase mb-2" style={{ color: 'var(--c-text3)' }}>
+              🏆 Resultados — {game.currentCategory}
+            </p>
+            {catScores.map((p, i) => (
+              <div key={p.uid} className="flex items-center gap-2 rounded-xl px-3 py-2"
+                style={i === 0 && p.catPts > 0
+                  ? { background: 'rgba(232,170,20,0.15)', border: '2px solid #E8AA14' }
+                  : { border: '1px solid var(--c-border)' }}>
+                <span className="text-base">{i === 0 && p.catPts > 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}</span>
+                <span className="flex-1 font-bold truncate" style={{ color: 'var(--c-text)' }}>{p.displayName}</span>
+                <span className="text-sm font-bold" style={{ color: p.catPts > 0 ? '#FF5714' : 'var(--c-text3)' }}>
+                  {p.catPts > 0 ? `+${p.catPts}pts` : '—'}
+                </span>
+              </div>
+            ))}
           </div>
+        )}
+
+        {/* Marcador acumulado + bonus admin */}
+        <div className="rounded-2xl shadow p-4 space-y-1.5" style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
+          <p className="text-xs font-bold uppercase mb-2" style={{ color: 'var(--c-text3)' }}>Marcador acumulado</p>
           {sortedPlayers.map((p, i) => (
             <div key={p.uid} className="flex items-center gap-2 rounded-xl px-3 py-2"
               style={i === 0
@@ -992,14 +1019,26 @@ export default function GamePage() {
               <span className="flex-1 font-bold truncate" style={{ color: 'var(--c-text)' }}>{p.displayName}</span>
               <span className="font-black tabular-nums" style={{ color: '#FF5714' }}>{p.score}pts</span>
               {isAdmin && (
-                <button
-                  onClick={() => addBonusPoints(gameId!, p.uid, 15)}
-                  title={`+15 pts bonus a ${p.displayName}`}
-                  className="text-sm px-2 py-1 rounded-lg font-bold transition-all hover:scale-110 active:scale-95"
-                  style={{ background: 'rgba(232,170,20,0.15)', color: '#E8AA14', border: '1px solid rgba(232,170,20,0.4)' }}
-                >
-                  🎁+15
-                </button>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    onClick={() => setBonusInputs(prev => ({ ...prev, [p.uid]: Math.max(1, (prev[p.uid] ?? 15) - 5) }))}
+                    className="w-6 h-6 rounded-md text-xs font-bold"
+                    style={{ background: 'var(--c-surface2)', color: 'var(--c-text2)' }}>−</button>
+                  <span className="w-8 text-center text-sm font-bold tabular-nums" style={{ color: '#E8AA14' }}>
+                    {bonusInputs[p.uid] ?? 15}
+                  </span>
+                  <button
+                    onClick={() => setBonusInputs(prev => ({ ...prev, [p.uid]: (prev[p.uid] ?? 15) + 5 }))}
+                    className="w-6 h-6 rounded-md text-xs font-bold"
+                    style={{ background: 'var(--c-surface2)', color: 'var(--c-text2)' }}>+</button>
+                  <button
+                    onClick={() => addBonusPoints(gameId!, p.uid, bonusInputs[p.uid] ?? 15)}
+                    className="ml-1 text-xs px-2 py-1 rounded-lg font-bold transition-all hover:scale-110 active:scale-95"
+                    style={{ background: 'rgba(232,170,20,0.2)', color: '#E8AA14', border: '1px solid rgba(232,170,20,0.5)' }}
+                  >
+                    🎁 Dar
+                  </button>
+                </div>
               )}
             </div>
           ))}
