@@ -116,6 +116,7 @@ export default function GamePage() {
   const [addingCat, setAddingCat] = useState(false)
   const [bonusInputs, setBonusInputs] = useState<Record<string, number>>({})
   const [showScoreTable, setShowScoreTable] = useState(false)
+  const [scoreTableTab, setScoreTableTab] = useState<'scores' | 'speed' | 'cheats'>('scores')
   const [showCatReview, setShowCatReview] = useState(false)
   const [newCatExcluded, setNewCatExcluded] = useState<string[] | null>(null)  // null = usar las del juego
   const [showLetterPicker, setShowLetterPicker] = useState(false)
@@ -337,37 +338,125 @@ export default function GamePage() {
   }
 
   // ── Tabla de puntajes (modal flotante) ───────────────────────────────────────
+  // Cálculo de stats de velocidad para las pestañas del admin
+  const allTimedNow = allAnswers.filter(a => a.secondsUsed !== undefined)
+  const speedStats = players.map(p => {
+    const mine = allTimedNow.filter(a => a.uid === p.uid)
+    if (mine.length === 0) return { ...p, avgSecs: null, correctCount: 0, total: 0 }
+    const totalSecs = mine.reduce((s, a) => {
+      const ok = !a.noAnswer && a.isValid !== false && (a.points ?? 0) > 0
+      return s + (ok ? (a.secondsUsed ?? 0) : (a.secondsUsed ?? 0) * 2)
+    }, 0)
+    return {
+      ...p,
+      avgSecs: totalSecs / mine.length,
+      correctCount: mine.filter(a => !a.noAnswer && a.isValid !== false && (a.points ?? 0) > 0).length,
+      total: mine.length,
+    }
+  }).sort((a, b) => (a.avgSecs ?? 999) - (b.avgSecs ?? 999))
+
   const scoreTableModal = showScoreTable ? (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
       onClick={() => setShowScoreTable(false)}>
-      <div className="w-full max-w-sm rounded-2xl shadow-2xl p-5 space-y-3"
+      <div className="w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden"
         style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}
         onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-display font-semibold" style={{ color: '#FF5714' }}>📊 Tabla de puntajes</h2>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 pt-4 pb-2">
+          <h2 className="text-base font-display font-semibold" style={{ color: '#FF5714' }}>📊 Estadísticas</h2>
           <button onClick={() => setShowScoreTable(false)}
             className="w-7 h-7 rounded-lg text-sm font-bold"
             style={{ background: 'var(--c-surface2)', color: 'var(--c-text2)' }}>✕</button>
         </div>
-        <div className="space-y-1.5">
-          {[...players].sort((a, b) => b.score - a.score).map((p, i) => (
-            <div key={p.uid} className="flex items-center gap-2 rounded-xl px-3 py-2"
-              style={i === 0
-                ? { background: 'rgba(232,170,20,0.15)', border: '2px solid #E8AA14' }
-                : { border: '1px solid var(--c-border)' }}>
-              <span className="text-base w-6 text-center">
-                {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`}
-              </span>
-              <span className="flex-1 font-semibold truncate" style={{ color: 'var(--c-text)' }}>
-                {p.displayName}
-                {p.status === 'eliminated' && <span className="text-xs ml-1" style={{ color: 'var(--c-text3)' }}>(elim.)</span>}
-              </span>
-              <span className="font-black tabular-nums" style={{ color: '#FF5714' }}>{p.score}pts</span>
-            </div>
-          ))}
+
+        {/* Tabs — solo admin ve las 3 pestañas */}
+        {isAdmin ? (
+          <div className="flex px-5 gap-1 pb-3">
+            {([['scores', '🏆 Pts'], ['speed', '⚡ Velocidad'], ['cheats', '🚨 Trampas']] as const).map(([tab, label]) => (
+              <button key={tab} onClick={() => setScoreTableTab(tab)}
+                className="flex-1 text-xs font-bold py-1.5 rounded-lg transition-colors"
+                style={scoreTableTab === tab
+                  ? { background: '#FF5714', color: 'white' }
+                  : { background: 'var(--c-surface2)', color: 'var(--c-text3)' }}>
+                {label}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="px-5 pb-2">
+            <p className="text-xs" style={{ color: 'var(--c-text3)' }}>
+              Categoría {game.categoryNumber} · {game.currentCategory}
+            </p>
+          </div>
+        )}
+
+        <div className="px-5 pb-5 space-y-1.5 max-h-72 overflow-y-auto">
+          {/* ── Pestaña puntajes (todos) ── */}
+          {(!isAdmin || scoreTableTab === 'scores') && (
+            [...players].sort((a, b) => b.score - a.score).map((p, i) => (
+              <div key={p.uid} className="flex items-center gap-2 rounded-xl px-3 py-2"
+                style={i === 0
+                  ? { background: 'rgba(232,170,20,0.15)', border: '2px solid #E8AA14' }
+                  : { border: '1px solid var(--c-border)' }}>
+                <span className="text-base w-6 text-center shrink-0">
+                  {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`}
+                </span>
+                <span className="flex-1 font-semibold truncate" style={{ color: 'var(--c-text)' }}>
+                  {p.displayName}
+                  {p.status === 'eliminated' && <span className="text-xs ml-1" style={{ color: 'var(--c-text3)' }}>(elim.)</span>}
+                </span>
+                <span className="font-black tabular-nums shrink-0" style={{ color: '#FF5714' }}>{p.score}pts</span>
+              </div>
+            ))
+          )}
+
+          {/* ── Pestaña velocidad (admin) ── */}
+          {isAdmin && scoreTableTab === 'speed' && (
+            speedStats.length === 0
+              ? <p className="text-sm text-center py-4" style={{ color: 'var(--c-text3)' }}>Aún no hay respuestas registradas</p>
+              : speedStats.map((p, i) => (
+                <div key={p.uid} className="flex items-center gap-2 rounded-xl px-3 py-2"
+                  style={i === 0 && p.avgSecs !== null
+                    ? { background: 'rgba(27,231,255,0.08)', border: '2px solid rgba(27,231,255,0.5)' }
+                    : { border: '1px solid var(--c-border)' }}>
+                  <span className="text-base w-6 text-center shrink-0">
+                    {i === 0 && p.avgSecs !== null ? '⚡' : `${i + 1}.`}
+                  </span>
+                  <span className="flex-1 font-semibold truncate" style={{ color: 'var(--c-text)' }}>{p.displayName}</span>
+                  <span className="text-xs shrink-0" style={{ color: 'var(--c-text3)' }}>
+                    ✅{p.correctCount}/{p.total}
+                  </span>
+                  <span className="font-black tabular-nums shrink-0 text-sm"
+                    style={{ color: p.avgSecs !== null ? '#1BE7FF' : 'var(--c-text3)' }}>
+                    {p.avgSecs !== null ? `${p.avgSecs.toFixed(1)}s` : '—'}
+                  </span>
+                </div>
+              ))
+          )}
+
+          {/* ── Pestaña trampas (admin) ── */}
+          {isAdmin && scoreTableTab === 'cheats' && (
+            [...players].sort((a, b) => (b.cheatCount ?? 0) - (a.cheatCount ?? 0)).map((p, i) => (
+              <div key={p.uid} className="flex items-center gap-2 rounded-xl px-3 py-2"
+                style={(p.cheatCount ?? 0) > 0 && i === 0
+                  ? { background: 'rgba(255,87,20,0.08)', border: '2px solid rgba(255,87,20,0.4)' }
+                  : { border: '1px solid var(--c-border)' }}>
+                <span className="text-base w-6 text-center shrink-0">
+                  {(p.cheatCount ?? 0) > 0 && i === 0 ? '🚨' : `${i + 1}.`}
+                </span>
+                <span className="flex-1 font-semibold truncate" style={{ color: 'var(--c-text)' }}>{p.displayName}</span>
+                <span className="font-black tabular-nums shrink-0"
+                  style={{ color: (p.cheatCount ?? 0) > 0 ? '#FF5714' : 'var(--c-text3)' }}>
+                  {(p.cheatCount ?? 0) > 0 ? `${p.cheatCount}x` : '✅'}
+                </span>
+              </div>
+            ))
+          )}
         </div>
-        {game && (
-          <p className="text-xs text-center" style={{ color: 'var(--c-text3)' }}>
+
+        {isAdmin && (
+          <p className="text-xs text-center pb-3" style={{ color: 'var(--c-text3)' }}>
             Categoría {game.categoryNumber} · {game.currentCategory}
           </p>
         )}

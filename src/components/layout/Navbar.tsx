@@ -15,6 +15,7 @@ export default function Navbar() {
 
   const [showLink, setShowLink] = useState(false)
   const [showMyScore, setShowMyScore] = useState(false)
+  const [scoreTab, setScoreTab] = useState<'mine' | 'table'>('mine')
   const [confirmLeave, setConfirmLeave] = useState(false)
 
   const isOnGamePage = location.pathname.startsWith('/game/')
@@ -184,59 +185,104 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Modal: Ver mi puntaje */}
+      {/* Modal: Ver mi puntaje / tabla */}
       {showMyScore && myPlayer && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
           onClick={() => setShowMyScore(false)}
         >
           <div
-            className="rounded-2xl shadow-2xl p-6 w-full max-w-xs text-center space-y-4"
+            className="rounded-2xl shadow-2xl w-full max-w-xs overflow-hidden"
             style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}
             onClick={e => e.stopPropagation()}
           >
-            <div>
-              <p className="text-xs uppercase tracking-widest mb-1" style={{ color: 'var(--c-text3)' }}>
-                Mi puntaje
-              </p>
-              <p className="text-6xl font-black tabular-nums" style={{ color: '#FF5714' }}>
-                {myPlayer.score}
-              </p>
-              <p className="text-lg font-bold mt-1" style={{ color: 'var(--c-text)' }}>
-                {profile?.displayName}
-              </p>
-              {myPlayer.status === 'eliminated' && (
-                <p className="text-xs mt-1 font-semibold" style={{ color: '#E8AA14' }}>
-                  ⚠️ Eliminado en esta categoría
-                </p>
-              )}
+            {/* Tabs */}
+            <div className="flex" style={{ borderBottom: '1px solid var(--c-border)' }}>
+              {(['mine', 'table'] as const).map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => setScoreTab(tab)}
+                  className="flex-1 py-3 text-sm font-bold transition-colors"
+                  style={scoreTab === tab
+                    ? { color: '#FF5714', borderBottom: '2px solid #FF5714' }
+                    : { color: 'var(--c-text3)' }}
+                >
+                  {tab === 'mine' ? '⭐ Mi puntaje' : '📊 Tabla'}
+                </button>
+              ))}
             </div>
 
-            {game?.currentCategory && (
-              <div className="rounded-xl px-4 py-2" style={{ background: 'var(--c-surface2)' }}>
-                <p className="text-xs" style={{ color: 'var(--c-text3)' }}>Categoría actual</p>
-                <p className="text-sm font-semibold" style={{ color: 'var(--c-text)' }}>{game.currentCategory}</p>
-              </div>
-            )}
+            <div className="p-5 space-y-4">
+              {scoreTab === 'mine' && (
+                <>
+                  <div className="text-center">
+                    <p className="text-xs uppercase tracking-widest mb-1" style={{ color: 'var(--c-text3)' }}>
+                      Mi puntaje
+                    </p>
+                    <p className="text-6xl font-black tabular-nums" style={{ color: '#FF5714' }}>
+                      {myPlayer.score}
+                    </p>
+                    <p className="text-lg font-bold mt-1" style={{ color: 'var(--c-text)' }}>
+                      {profile?.displayName}
+                    </p>
+                    {myPlayer.status === 'eliminated' && (
+                      <p className="text-xs mt-1 font-semibold" style={{ color: '#E8AA14' }}>
+                        ⚠️ Eliminado en esta categoría
+                      </p>
+                    )}
+                  </div>
 
-            {/* Ranking entre jugadores */}
-            {players.length > 1 && (() => {
-              const sorted = [...players].sort((a, b) => b.score - a.score)
-              const rank = sorted.findIndex(p => p.uid === profile?.uid) + 1
-              return (
-                <p className="text-sm" style={{ color: 'var(--c-text2)' }}>
-                  Posición <span className="font-black" style={{ color: '#FF5714' }}>#{rank}</span> de {players.length} jugadores
-                </p>
-              )
-            })()}
+                  {game?.currentCategory && (
+                    <div className="rounded-xl px-4 py-2 text-center" style={{ background: 'var(--c-surface2)' }}>
+                      <p className="text-xs" style={{ color: 'var(--c-text3)' }}>Categoría actual</p>
+                      <p className="text-sm font-semibold" style={{ color: 'var(--c-text)' }}>{game.currentCategory}</p>
+                    </div>
+                  )}
 
-            <button
-              onClick={() => setShowMyScore(false)}
-              className="w-full text-white font-display font-semibold py-3 rounded-xl transition-all hover:scale-[1.02] active:scale-95"
-              style={{ background: '#FF5714' }}
-            >
-              OK
-            </button>
+                  {players.length > 1 && (() => {
+                    const sorted = [...players].sort((a, b) => b.score - a.score)
+                    const rank = sorted.findIndex(p => p.uid === profile?.uid) + 1
+                    return (
+                      <p className="text-sm text-center" style={{ color: 'var(--c-text2)' }}>
+                        Posición <span className="font-black" style={{ color: '#FF5714' }}>#{rank}</span> de {players.length} jugadores
+                      </p>
+                    )
+                  })()}
+                </>
+              )}
+
+              {scoreTab === 'table' && (
+                <div className="space-y-1.5">
+                  {[...players].sort((a, b) => b.score - a.score).map((p, i) => (
+                    <div key={p.uid}
+                      className="flex items-center gap-2 rounded-xl px-3 py-2"
+                      style={p.uid === profile?.uid
+                        ? { background: 'rgba(255,87,20,0.08)', border: '2px solid #FF5714' }
+                        : i === 0
+                          ? { background: 'rgba(232,170,20,0.12)', border: '1px solid rgba(232,170,20,0.4)' }
+                          : { border: '1px solid var(--c-border)' }}>
+                      <span className="text-base w-6 text-center shrink-0">
+                        {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`}
+                      </span>
+                      <span className="flex-1 font-semibold truncate" style={{ color: 'var(--c-text)' }}>
+                        {p.displayName}
+                        {p.uid === profile?.uid && <span className="text-xs ml-1" style={{ color: '#FF5714' }}>(tú)</span>}
+                        {p.status === 'eliminated' && <span className="text-xs ml-1" style={{ color: 'var(--c-text3)' }}>·elim.</span>}
+                      </span>
+                      <span className="font-black tabular-nums shrink-0" style={{ color: '#FF5714' }}>{p.score}pts</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <button
+                onClick={() => setShowMyScore(false)}
+                className="w-full text-white font-display font-semibold py-3 rounded-xl transition-all hover:scale-[1.02] active:scale-95"
+                style={{ background: '#FF5714' }}
+              >
+                OK
+              </button>
+            </div>
           </div>
         </div>
       )}

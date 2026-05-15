@@ -2,11 +2,16 @@ import { useAuthStore } from '../store/authStore'
 import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import LinkAccountForm from '../components/auth/LinkAccountForm'
+import { updateDisplayName } from '../services/authService'
 
 export default function ProfilePage() {
-  const { profile } = useAuthStore()
+  const { profile, setProfile } = useAuthStore()
   const navigate = useNavigate()
   const [showLink, setShowLink] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [nameInput, setNameInput] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   if (!profile) { navigate('/auth'); return null }
 
@@ -14,11 +19,120 @@ export default function ProfilePage() {
     ? Math.round(profile.totalScore / profile.gamesPlayed)
     : 0
 
+  function startEditing() {
+    setNameInput(profile!.displayName)
+    setSaveError(null)
+    setEditing(true)
+  }
+
+  function cancelEditing() {
+    setEditing(false)
+    setSaveError(null)
+  }
+
+  async function handleSave() {
+    const trimmed = nameInput.trim()
+    if (!trimmed) return
+    setSaving(true)
+    setSaveError(null)
+    try {
+      await updateDisplayName(profile!.uid, trimmed)
+      setProfile({ ...profile!, displayName: trimmed })
+      setEditing(false)
+    } catch (err: unknown) {
+      setSaveError(err instanceof Error ? err.message : 'Error al guardar el nombre')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
     <div className="max-w-sm mx-auto p-4 space-y-4">
       <div className="bg-gradient-to-br from-brand-600 to-brand-800 rounded-2xl p-6 text-white text-center">
         <div className="text-5xl mb-2">{profile.isGuest ? '👤' : '🎮'}</div>
-        <h1 className="text-2xl font-black">{profile.displayName}</h1>
+
+        {editing ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+            <input
+              type="text"
+              value={nameInput}
+              onChange={e => setNameInput(e.target.value)}
+              disabled={saving}
+              autoFocus
+              style={{
+                background: 'var(--c-input, rgba(255,255,255,0.15))',
+                border: '1px solid var(--c-border, rgba(255,255,255,0.4))',
+                color: 'var(--c-text, #fff)',
+                borderRadius: '8px',
+                padding: '6px 12px',
+                fontSize: '1.1rem',
+                fontWeight: 700,
+                textAlign: 'center',
+                width: '100%',
+                outline: 'none',
+              }}
+            />
+            {saveError && (
+              <p style={{ color: '#fca5a5', fontSize: '0.75rem', margin: 0 }}>{saveError}</p>
+            )}
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+              <button
+                onClick={handleSave}
+                disabled={saving || !nameInput.trim()}
+                style={{
+                  background: 'var(--c-surface, rgba(255,255,255,0.9))',
+                  color: 'var(--c-text, #1e3a5f)',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '5px 14px',
+                  fontWeight: 700,
+                  fontSize: '0.85rem',
+                  cursor: saving ? 'not-allowed' : 'pointer',
+                  opacity: saving ? 0.7 : 1,
+                }}
+              >
+                {saving ? 'Guardando...' : 'Guardar'}
+              </button>
+              <button
+                onClick={cancelEditing}
+                disabled={saving}
+                style={{
+                  background: 'transparent',
+                  color: 'var(--c-text3, rgba(255,255,255,0.7))',
+                  border: '1px solid var(--c-border, rgba(255,255,255,0.4))',
+                  borderRadius: '8px',
+                  padding: '5px 14px',
+                  fontWeight: 700,
+                  fontSize: '0.85rem',
+                  cursor: saving ? 'not-allowed' : 'pointer',
+                }}
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+            <h1 className="text-2xl font-black">{profile.displayName}</h1>
+            <button
+              onClick={startEditing}
+              title="Editar nombre"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '1rem',
+                lineHeight: 1,
+                padding: '2px 4px',
+                borderRadius: '4px',
+                opacity: 0.8,
+              }}
+            >
+              ✏️
+            </button>
+          </div>
+        )}
+
         {profile.isGuest && (
           <span className="text-xs bg-amber-400 text-amber-900 font-bold px-2 py-0.5 rounded-full mt-1 inline-block">
             Invitado

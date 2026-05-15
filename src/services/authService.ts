@@ -109,6 +109,16 @@ export async function recordGameStats(uid: string, score: number) {
   })
 }
 
+export async function updateDisplayName(uid: string, newName: string) {
+  const trimmed = newName.trim()
+  if (!trimmed) throw new Error('El nombre no puede estar vacío')
+  if (auth.currentUser) {
+    await updateProfile(auth.currentUser, { displayName: trimmed })
+  }
+  await updateDoc(doc(db, 'users', uid), { displayName: trimmed })
+  return trimmed
+}
+
 export async function setAdminRole(uid: string, isAdmin: boolean) {
   await setDoc(doc(db, 'users', uid), { isAdmin }, { merge: true })
 }
