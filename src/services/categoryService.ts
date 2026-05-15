@@ -90,3 +90,21 @@ export async function reorderCategories(updates: Array<{ id: string; order: numb
   }
   await batch.commit()
 }
+
+/** Elimina varias categorías en un solo batch. */
+export async function deleteManyCategories(ids: string[]) {
+  const batch = writeBatch(db)
+  for (const id of ids) {
+    batch.delete(doc(db, 'categories', id))
+  }
+  await batch.commit()
+}
+
+/** Cambia `excludeFromRandom` en varias categorías en un solo batch. */
+export async function bulkSetExcludeFromRandom(ids: string[], exclude: boolean) {
+  const batch = writeBatch(db)
+  for (const id of ids) {
+    batch.update(doc(db, 'categories', id), { excludeFromRandom: exclude })
+  }
+  await batch.commit()
+}
