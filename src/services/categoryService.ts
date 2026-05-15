@@ -1,5 +1,5 @@
 import {
-  collection, doc, addDoc, updateDoc, getDocs,
+  collection, doc, addDoc, updateDoc, deleteDoc, getDocs,
   query, orderBy, serverTimestamp,
 } from 'firebase/firestore'
 import { db } from '../firebase'
@@ -63,4 +63,12 @@ export async function toggleCategory(id: string, isActive: boolean) {
 
 export async function toggleExcludeFromRandom(id: string, exclude: boolean) {
   await updateDoc(doc(db, 'categories', id), { excludeFromRandom: exclude })
+}
+
+export async function updateCategoryName(id: string, name: string) {
+  await updateDoc(doc(db, 'categories', id), { name: name.trim() })
+}
+
+export async function deleteCategory(id: string) {
+  await deleteDoc(doc(db, 'categories', id))
 }

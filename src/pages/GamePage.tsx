@@ -8,7 +8,7 @@ import {
   continueNextRotation, validateAnswer, eliminatePlayer,
   endGame, endCategory, startNewCategory, undoNewCategory, undoEndCategory, undoEndGame,
   updateExcludedLetters, setPauseNextTurn, resumeFromPause, updateTimers, addBonusPoints,
-  adjustAnswerValidity, recordCheat,
+  adjustAnswerValidity, recordCheat, validateAnswerWithPoints,
 } from '../services/gameService'
 import { getCategories, addCategory } from '../services/categoryService'
 import { recordGameStats } from '../services/authService'
@@ -1017,12 +1017,27 @@ export default function GamePage() {
                   </div>
                   {!ans.noAnswer && isAdmin && ansId && (
                     <div className="flex gap-1 shrink-0">
-                      <button onClick={() => validateAnswer(gameId!, ansId, true)}
-                        className={`w-7 h-7 rounded-lg text-sm font-bold transition-colors
-                          ${ans.isValid === true ? 'bg-green-500 text-white' : 'bg-gray-100 hover:bg-green-100'}`}>✓</button>
+                      <button onClick={() => validateAnswerWithPoints(gameId!, ansId, 10)}
+                        className="text-xs font-bold px-2 py-1 rounded-lg transition-colors"
+                        style={ans.isValid === true && ans.points === 10
+                          ? { background: '#22c55e', color: 'white' }
+                          : { background: '#dcfce7', color: '#15803d' }}>
+                        10
+                      </button>
+                      <button onClick={() => validateAnswerWithPoints(gameId!, ansId, 5)}
+                        className="text-xs font-bold px-2 py-1 rounded-lg transition-colors"
+                        style={ans.isValid === true && ans.points === 5
+                          ? { background: '#86efac', color: '#15803d' }
+                          : { background: '#f0fdf4', color: '#16a34a' }}>
+                        5
+                      </button>
                       <button onClick={() => validateAnswer(gameId!, ansId, false)}
-                        className={`w-7 h-7 rounded-lg text-sm font-bold transition-colors
-                          ${ans.isValid === false ? 'bg-red-500 text-white' : 'bg-gray-100 hover:bg-red-100'}`}>✗</button>
+                        className="text-xs font-bold px-2 py-1 rounded-lg transition-colors"
+                        style={ans.isValid === false
+                          ? { background: '#ef4444', color: 'white' }
+                          : { background: '#fee2e2', color: '#dc2626' }}>
+                        ✗
+                      </button>
                     </div>
                   )}
                   {isAdmin && (
@@ -1097,12 +1112,27 @@ export default function GamePage() {
                 </div>
                 {!ans.noAnswer && isAdmin && ansId && (
                   <div className="flex gap-1 shrink-0">
-                    <button onClick={() => validateAnswer(gameId!, ansId, true)}
-                      className={`w-7 h-7 rounded-lg text-sm font-bold transition-colors
-                        ${ans.isValid === true ? 'bg-green-500 text-white' : 'bg-gray-100 hover:bg-green-100'}`}>✓</button>
+                    <button onClick={() => validateAnswerWithPoints(gameId!, ansId, 10)}
+                      className="text-xs font-bold px-2 py-1 rounded-lg transition-colors"
+                      style={ans.isValid === true && ans.points === 10
+                        ? { background: '#22c55e', color: 'white' }
+                        : { background: '#dcfce7', color: '#15803d' }}>
+                      10
+                    </button>
+                    <button onClick={() => validateAnswerWithPoints(gameId!, ansId, 5)}
+                      className="text-xs font-bold px-2 py-1 rounded-lg transition-colors"
+                      style={ans.isValid === true && ans.points === 5
+                        ? { background: '#86efac', color: '#15803d' }
+                        : { background: '#f0fdf4', color: '#16a34a' }}>
+                      5
+                    </button>
                     <button onClick={() => validateAnswer(gameId!, ansId, false)}
-                      className={`w-7 h-7 rounded-lg text-sm font-bold transition-colors
-                        ${ans.isValid === false ? 'bg-red-500 text-white' : 'bg-gray-100 hover:bg-red-100'}`}>✗</button>
+                      className="text-xs font-bold px-2 py-1 rounded-lg transition-colors"
+                      style={ans.isValid === false
+                        ? { background: '#ef4444', color: 'white' }
+                        : { background: '#fee2e2', color: '#dc2626' }}>
+                      ✗
+                    </button>
                   </div>
                 )}
                 {!ans.noAnswer && <span className="text-sm font-black text-brand-700 shrink-0">+{ans.points}pts</span>}

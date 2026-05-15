@@ -256,8 +256,9 @@ async function scoreRotation(gameId: string, rotationNumber: number, activePlaye
   const batch = writeBatch(db)
   for (const ans of rotationAnswers) {
     if (ans.isValid === false) continue
+    // Si el admin ya asignó puntos manualmente, respetarlos; si no, calcular por unicidad
     const isUnique = countMap[ans.answer.toLowerCase().trim()] === 1
-    const pts = isUnique ? 10 : 5
+    const pts = (ans.points != null && ans.points > 0) ? ans.points : (isUnique ? 10 : 5)
     const ansKey = `${ans.uid}_r${rotationNumber}`
     batch.update(doc(db, 'games', gameId, 'answers', ansKey), { points: pts })
     // increment() es atómico: evita sobreescribir con datos locales desactualizados
@@ -289,6 +290,11 @@ export async function updateTimers(gameId: string, letterSeconds: number, answer
 
 export async function validateAnswer(gameId: string, answerId: string, isValid: boolean) {
   await updateDoc(doc(db, 'games', gameId, 'answers', answerId), { isValid })
+}
+
+// Validar con puntos manuales (10 o 5 según criterio del admin)
+export async function validateAnswerWithPoints(gameId: string, answerId: string, pts: 5 | 10) {
+  await updateDoc(doc(db, 'games', gameId, 'answers', answerId), { isValid: true, points: pts })
 }
 
 export async function eliminatePlayer(gameId: string, uid: string) {
