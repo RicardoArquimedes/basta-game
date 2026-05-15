@@ -123,6 +123,8 @@ export default function GamePage() {
   const prevPlayerStatusesRef = useRef<Record<string, string>>({})
 
   const isAdmin = game?.adminId === profile?.uid
+  const myPlayer = players.find(p => p.uid === profile?.uid)
+  const isEliminated = myPlayer?.status === 'eliminated'
   const isMyTurn = !isAdmin && game?.currentTurnUid === profile?.uid
   const currentPlayer = players.find(p => p.uid === game?.currentTurnUid)
   const activePlayers = players.filter(p => p.status === 'active')
@@ -210,6 +212,7 @@ export default function GamePage() {
       setCaughtCheating(true)
       if (gameId && profile) {
         await eliminatePlayer(gameId, profile.uid)
+        await addBonusPoints(gameId, profile.uid, -10)
       }
     }
 
@@ -366,7 +369,7 @@ export default function GamePage() {
       >
         <span className="text-xl">🚨</span>
         <span style={{ color: '#fff' }}>
-          <span style={{ color: '#FF5714' }}>{cheatToast}</span> hizo trampa en este turno
+          <span style={{ color: '#FF5714' }}>{cheatToast}</span> hizo trampa — <span style={{ color: '#FF5714', fontWeight: 900 }}>−10 pts</span>
         </span>
       </div>
     </div>
@@ -398,11 +401,15 @@ export default function GamePage() {
           <span style={{ color: '#FF5714', fontWeight: 700 }}>fuera de esta categoría</span>.
         </p>
         <div
-          className="rounded-2xl px-6 py-4 text-center max-w-xs mb-6"
+          className="rounded-2xl px-6 py-4 text-center max-w-xs mb-6 space-y-2"
           style={{ background: 'rgba(255,87,20,0.12)', border: '1px solid rgba(255,87,20,0.3)' }}
         >
+          <p className="text-2xl font-black" style={{ color: '#FF5714' }}>−10 pts</p>
           <p className="text-sm" style={{ color: '#FF5714' }}>
-            Puedes seguir viendo el juego. En la próxima categoría podrás volver a participar.
+            Se te descontaron 10 puntos de tu marcador.
+          </p>
+          <p className="text-xs" style={{ color: '#888' }}>
+            En la próxima categoría podrás volver a participar.
           </p>
         </div>
         <button
@@ -658,16 +665,33 @@ export default function GamePage() {
 
         {/* Turno actual */}
         <div className="rounded-2xl px-4 py-3 text-center border-2"
-          style={isMyTurn
+          style={isMyTurn && !isEliminated
             ? { background: 'rgba(255,87,20,0.1)', borderColor: '#FF5714' }
-            : { background: 'var(--c-surface)', borderColor: 'var(--c-border)' }}>
-          <p className="font-black text-lg" style={{ color: isMyTurn ? '#FF5714' : 'var(--c-text)' }}>
-            {isMyTurn ? '🎯 ¡Es TU turno!' : `⏳ Turno de ${currentPlayer?.displayName ?? '...'}`}
+            : isMyTurn && isEliminated
+              ? { background: 'rgba(136,136,136,0.08)', borderColor: 'var(--c-border)' }
+              : { background: 'var(--c-surface)', borderColor: 'var(--c-border)' }}>
+          <p className="font-black text-lg" style={{ color: isMyTurn && !isEliminated ? '#FF5714' : 'var(--c-text)' }}>
+            {isMyTurn && !isEliminated
+              ? '🎯 ¡Es TU turno!'
+              : isMyTurn && isEliminated
+                ? '⏹ Tu turno — categoría terminada'
+                : `⏳ Turno de ${currentPlayer?.displayName ?? '...'}`}
           </p>
         </div>
 
+        {/* ── MI TURNO: eliminado en esta categoría ── */}
+        {isMyTurn && isEliminated && (
+          <div className="rounded-2xl shadow p-6 text-center space-y-3" style={{ background: 'var(--c-surface)' }}>
+            <div className="text-5xl">⏹</div>
+            <p className="font-black text-xl" style={{ color: 'var(--c-text)' }}>Se acabó tu turno</p>
+            <p className="text-sm" style={{ color: 'var(--c-text3)' }}>
+              Fuiste eliminado en esta categoría.<br />Podrás participar en la siguiente.
+            </p>
+          </div>
+        )}
+
         {/* ── MI TURNO: elegir letra ── */}
-        {isMyTurn && !game.currentLetter && (
+        {isMyTurn && !game.currentLetter && !isEliminated && (
           <div className="rounded-2xl shadow p-4 space-y-3" style={{ background: 'var(--c-surface)' }}>
             <div className="flex items-center justify-between">
               <p className="font-bold" style={{ color: 'var(--c-text)' }}>Elige tu letra</p>
@@ -685,7 +709,7 @@ export default function GamePage() {
         )}
 
         {/* ── MI TURNO: responder ── */}
-        {isMyTurn && game.currentLetter && (
+        {isMyTurn && game.currentLetter && !isEliminated && (
           <div className="rounded-2xl shadow p-4 space-y-3" style={{ background: 'var(--c-surface)' }}>
             <div className="flex items-center justify-between">
               <div>
