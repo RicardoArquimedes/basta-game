@@ -201,6 +201,19 @@ export default function GamePage() {
     }
   }, [game?.status, game?.currentCategoryId, allAnswers.length, isAdmin, players])
 
+  // Auto-asignar 10 pts a respuestas sin validar al pausar o terminar rotación
+  useEffect(() => {
+    if (!isAdmin || !gameId) return
+    if (game?.status !== 'turn_paused' && game?.status !== 'rotation_end') return
+    const currentRotationAnswers = allAnswers.filter(a => a.rotationNumber === game.rotationNumber)
+    currentRotationAnswers.forEach(ans => {
+      if (ans.noAnswer || ans.isValid !== null) return
+      const idx = allAnswers.findIndex(a => a.uid === ans.uid && a.rotationNumber === ans.rotationNumber)
+      const ansId = answerIds[idx]
+      if (ansId) validateAnswerWithPoints(gameId, ansId, 10)
+    })
+  }, [game?.status, answerIds.length])
+
   // Detectar trampa de otros jugadores y mostrar toast a los demás
   useEffect(() => {
     players.forEach(player => {
