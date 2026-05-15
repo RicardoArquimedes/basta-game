@@ -428,6 +428,36 @@ export async function endGame(gameId: string, game: Game, players: Player[]) {
   saveGameHistory(gameId, game).catch(err => console.error('Error guardando historial:', err))
 }
 
+// Eliminar una partida activa y todas sus subcolecciones
+export async function deleteGame(gameId: string): Promise<void> {
+  // Borrar en lotes de 490 para no superar el límite de 500 operaciones por batch
+  async function batchDelete(refs: import('firebase/firestore').DocumentReference[]) {
+    for (let i = 0; i < refs.length; i += 490) {
+      const b = writeBatch(db)
+      refs.slice(i, i + 490).forEach(r => b.delete(r))
+      await b.commit()
+    }
+  }
+
+  const [playersSnap, answersSnap] = await Promise.all([
+    getDocs(collection(db, 'games', gameId, 'players')),
+    getDocs(collection(db, 'games', gameId, 'answers')),
+  ])
+
+  await batchDelete([
+    ...playersSnap.docs.map(d => d.ref),
+    ...answersSnap.docs.map(d => d.ref),
+    doc(db, 'games', gameId),
+  ])
+}
+
+// Eliminar todas las partidas activas de la lista
+export async function deleteAllGames(games: Game[]): Promise<void> {
+  for (const game of games) {
+    await deleteGame(game.id)
+  }
+}
+
 export async function updateExcludedLetters(gameId: string, excluded: string[]) {
   await updateDoc(doc(db, 'games', gameId), {
     excludedLetters: excluded,

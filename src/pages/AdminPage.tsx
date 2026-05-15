@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useAuthStore } from '../store/authStore'
 import { useNavigate } from 'react-router-dom'
 import { getCategories, seedCategories } from '../services/categoryService'
-import { getActiveGames } from '../services/gameService'
+import { getActiveGames, deleteGame, deleteAllGames } from '../services/gameService'
 import { getAllGameHistories } from '../services/gameHistoryService'
 import CategoryManager from '../components/admin/CategoryManager'
 import GameHistoryManager from '../components/admin/GameHistoryManager'
@@ -26,6 +26,9 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [loadingGames, setLoadingGames] = useState(true)
   const [loadingHistory, setLoadingHistory] = useState(true)
+  const [confirmDeleteGame, setConfirmDeleteGame] = useState<string | null>(null)
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     if (!profile) { navigate('/auth'); return }
@@ -56,6 +59,22 @@ export default function AdminPage() {
     setLoadingHistory(false)
   }
 
+  async function handleDeleteGame(gameId: string) {
+    setDeleting(true)
+    await deleteGame(gameId)
+    setConfirmDeleteGame(null)
+    setDeleting(false)
+    loadGames()
+  }
+
+  async function handleDeleteAll() {
+    setDeleting(true)
+    await deleteAllGames(activeGames)
+    setConfirmDeleteAll(false)
+    setDeleting(false)
+    loadGames()
+  }
+
   if (!profile) return null
 
   return (
@@ -71,14 +90,56 @@ export default function AdminPage() {
       <div className="rounded-2xl shadow p-4 space-y-3" style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
         <div className="flex items-center justify-between">
           <h2 className="font-display font-semibold" style={{ color: '#FF5714' }}>🎮 Partidas activas</h2>
-          <button
-            onClick={loadGames}
-            className="text-xs px-3 py-1.5 rounded-lg font-bold transition-colors"
-            style={{ background: 'var(--c-surface2)', color: 'var(--c-text2)' }}
-          >
-            ↺ Actualizar
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={loadGames}
+              className="text-xs px-3 py-1.5 rounded-lg font-bold transition-colors"
+              style={{ background: 'var(--c-surface2)', color: 'var(--c-text2)' }}
+            >
+              ↺ Actualizar
+            </button>
+            {activeGames.length > 1 && !confirmDeleteAll && (
+              <button
+                onClick={() => setConfirmDeleteAll(true)}
+                className="text-xs font-bold px-3 py-1.5 rounded-lg transition-colors"
+                style={{ background: 'rgba(239,68,68,0.10)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' }}
+              >
+                🗑 Eliminar todas
+              </button>
+            )}
+          </div>
         </div>
+
+        {/* Confirmación eliminar todas */}
+        {confirmDeleteAll && (
+          <div className="rounded-xl p-3 space-y-2"
+            style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)' }}>
+            <p className="text-sm font-bold text-center" style={{ color: '#ef4444' }}>
+              ¿Eliminar las {activeGames.length} partidas activas?
+            </p>
+            <p className="text-xs text-center" style={{ color: 'var(--c-text3)' }}>
+              Esta acción no se puede deshacer. Los jugadores serán desconectados.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={handleDeleteAll}
+                disabled={deleting}
+                className="flex-1 text-white font-bold py-2 rounded-xl text-sm disabled:opacity-50 transition-colors"
+                style={{ background: '#ef4444' }}
+              >
+                {deleting ? 'Eliminando...' : `Sí, eliminar todas (${activeGames.length})`}
+              </button>
+              <button
+                onClick={() => setConfirmDeleteAll(false)}
+                disabled={deleting}
+                className="px-4 py-2 rounded-xl text-sm font-bold transition-colors"
+                style={{ background: 'var(--c-surface2)', color: 'var(--c-text2)' }}
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
 
         {loadingGames ? (
           <div className="flex justify-center py-4">
@@ -94,11 +155,11 @@ export default function AdminPage() {
             {activeGames.map(game => (
               <div
                 key={game.id}
-                className="rounded-xl p-3 space-y-1"
+                className="rounded-xl p-3 space-y-1.5"
                 style={{ background: 'var(--c-surface2)', border: '1px solid var(--c-border)' }}
               >
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-xl font-display font-semibold tracking-widest" style={{ color: '#FF5714' }}>
                       {game.code}
                     </span>
@@ -107,14 +168,27 @@ export default function AdminPage() {
                       {STATUS_LABEL[game.status] ?? game.status}
                     </span>
                   </div>
-                  <button
-                    onClick={() => navigate(`/game/${game.id}`)}
-                    className="text-xs text-white font-bold px-3 py-1.5 rounded-lg transition-colors"
-                    style={{ background: '#FF5714' }}
-                  >
-                    Ir →
-                  </button>
+                  <div className="flex gap-1.5 shrink-0">
+                    <button
+                      onClick={() => navigate(`/game/${game.id}`)}
+                      className="text-xs text-white font-bold px-3 py-1.5 rounded-lg transition-colors"
+                      style={{ background: '#FF5714' }}
+                    >
+                      Ir →
+                    </button>
+                    {confirmDeleteGame !== game.id && (
+                      <button
+                        onClick={() => { setConfirmDeleteGame(game.id); setConfirmDeleteAll(false) }}
+                        className="text-xs font-bold px-2.5 py-1.5 rounded-lg transition-colors"
+                        style={{ background: 'rgba(239,68,68,0.10)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' }}
+                        title="Eliminar partida"
+                      >
+                        🗑
+                      </button>
+                    )}
+                  </div>
                 </div>
+
                 {game.currentCategory && (
                   <p className="text-xs" style={{ color: 'var(--c-text2)' }}>
                     📂 {game.currentCategory} · Categoría {game.categoryNumber}
@@ -123,6 +197,32 @@ export default function AdminPage() {
                 <p className="text-xs" style={{ color: 'var(--c-text3)' }}>
                   Admin: {game.adminName} · Máx {game.maxPlayers} jugadores
                 </p>
+
+                {/* Confirmación eliminar esta partida */}
+                {confirmDeleteGame === game.id && (
+                  <div className="flex items-center gap-2 pt-1"
+                    style={{ borderTop: '1px solid rgba(239,68,68,0.2)' }}>
+                    <span className="text-xs flex-1" style={{ color: '#ef4444' }}>
+                      ¿Eliminar partida {game.code}?
+                    </span>
+                    <button
+                      onClick={() => handleDeleteGame(game.id)}
+                      disabled={deleting}
+                      className="text-xs text-white font-bold px-3 py-1.5 rounded-lg disabled:opacity-50 transition-colors"
+                      style={{ background: '#ef4444' }}
+                    >
+                      {deleting ? '...' : 'Sí'}
+                    </button>
+                    <button
+                      onClick={() => setConfirmDeleteGame(null)}
+                      disabled={deleting}
+                      className="text-xs font-bold px-3 py-1.5 rounded-lg transition-colors"
+                      style={{ background: 'var(--c-surface)', color: 'var(--c-text2)' }}
+                    >
+                      No
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
