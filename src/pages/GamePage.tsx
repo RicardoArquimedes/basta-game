@@ -1134,20 +1134,21 @@ export default function GamePage() {
               <span className="font-black tabular-nums" style={{ color: '#FF5714' }}>{p.score}pts</span>
               {isAdmin && (
                 <div className="flex items-center gap-1 shrink-0">
-                  <button
-                    onClick={() => setBonusInputs(prev => ({ ...prev, [p.uid]: Math.max(1, (prev[p.uid] ?? 10) - 5) }))}
-                    className="w-6 h-6 rounded-md text-xs font-bold"
-                    style={{ background: 'var(--c-surface2)', color: 'var(--c-text2)' }}>−</button>
-                  <span className="w-8 text-center text-sm font-bold tabular-nums" style={{ color: '#E8AA14' }}>
-                    {bonusInputs[p.uid] ?? 10}
-                  </span>
-                  <button
-                    onClick={() => setBonusInputs(prev => ({ ...prev, [p.uid]: (prev[p.uid] ?? 10) + 5 }))}
-                    className="w-6 h-6 rounded-md text-xs font-bold"
-                    style={{ background: 'var(--c-surface2)', color: 'var(--c-text2)' }}>+</button>
+                  <input
+                    type="number"
+                    min={-999}
+                    max={999}
+                    value={bonusInputs[p.uid] ?? 10}
+                    onChange={e => {
+                      const val = parseInt(e.target.value)
+                      if (!isNaN(val)) setBonusInputs(prev => ({ ...prev, [p.uid]: val }))
+                    }}
+                    className="w-14 text-center text-sm font-bold tabular-nums rounded-lg px-1 py-1 focus:outline-none"
+                    style={{ background: 'var(--c-input)', border: '1px solid var(--c-border)', color: '#E8AA14' }}
+                  />
                   <button
                     onClick={() => addBonusPoints(gameId!, p.uid, bonusInputs[p.uid] ?? 10)}
-                    className="ml-1 text-xs px-2 py-1 rounded-lg font-bold transition-all hover:scale-110 active:scale-95"
+                    className="text-xs px-2 py-1 rounded-lg font-bold transition-all hover:scale-110 active:scale-95"
                     style={{ background: 'rgba(232,170,20,0.2)', color: '#E8AA14', border: '1px solid rgba(232,170,20,0.5)' }}
                   >
                     🎁 Dar
@@ -1379,17 +1380,23 @@ export default function GamePage() {
     const sorted = [...players].sort((a, b) => b.score - a.score)
 
     // ── Estadísticas ────────────────────────────────────────────────────────────
-    // Tiempo promedio de respuesta (solo respuestas con secondsUsed registrado)
-    const timedAnswers = allAnswers.filter(a => !a.noAnswer && a.secondsUsed !== undefined)
+    // Velocidad-precisión: respuestas correctas cuentan con su tiempo real,
+    // respuestas incorrectas/sin respuesta cuentan como tiempo máximo (penalización).
+    // Menor promedio = más rápido Y más preciso.
+    const allTimedAnswers = allAnswers.filter(a => a.secondsUsed !== undefined)
     const playerStats = players.map(p => {
-      const mine = timedAnswers.filter(a => a.uid === p.uid)
-      const avgSecs = mine.length > 0
-        ? mine.reduce((s, a) => s + (a.secondsUsed ?? 0), 0) / mine.length
-        : null
-      return { ...p, avgSecs, answerCount: mine.length }
+      const mine = allTimedAnswers.filter(a => a.uid === p.uid)
+      if (mine.length === 0) return { ...p, avgSecs: null, correctCount: 0, answerCount: 0 }
+      const totalSecs = mine.reduce((s, a) => {
+        const isCorrect = !a.noAnswer && a.isValid !== false && (a.points ?? 0) > 0
+        // Correcta: tiempo real usado. Incorrecta/sin respuesta: tiempo máximo (penalización)
+        return s + (isCorrect ? (a.secondsUsed ?? 0) : (a.secondsUsed ?? 0) * 2)
+      }, 0)
+      const correctCount = mine.filter(a => !a.noAnswer && a.isValid !== false && (a.points ?? 0) > 0).length
+      return { ...p, avgSecs: totalSecs / mine.length, correctCount, answerCount: mine.length }
     })
     const fastest = [...playerStats]
-      .filter(p => p.avgSecs !== null && p.answerCount >= 1)
+      .filter(p => p.avgSecs !== null && p.correctCount >= 1)
       .sort((a, b) => (a.avgSecs ?? 99) - (b.avgSecs ?? 99))[0]
     const mostCheater = [...players]
       .filter(p => (p.cheatCount ?? 0) > 0)
@@ -1426,11 +1433,14 @@ export default function GamePage() {
                 style={{ background: 'rgba(27,231,255,0.08)', border: '1px solid rgba(27,231,255,0.3)' }}>
                 <span className="text-2xl">⚡</span>
                 <div className="flex-1">
-                  <p className="text-xs" style={{ color: 'var(--c-text3)' }}>Más rápido respondiendo</p>
+                  <p className="text-xs" style={{ color: 'var(--c-text3)' }}>Más rápido y preciso</p>
                   <p className="font-bold" style={{ color: 'var(--c-text)' }}>{fastest.displayName}</p>
+                  <p className="text-xs" style={{ color: 'var(--c-text3)' }}>
+                    {fastest.correctCount} correctas de {fastest.answerCount}
+                  </p>
                 </div>
                 <span className="font-black tabular-nums" style={{ color: '#1BE7FF' }}>
-                  {fastest.avgSecs!.toFixed(1)}s prom.
+                  {fastest.avgSecs!.toFixed(1)}s
                 </span>
               </div>
             )}
@@ -1452,7 +1462,7 @@ export default function GamePage() {
                         {p.avgSecs !== null ? `${p.avgSecs!.toFixed(1)}s` : '—'}
                       </span>
                       <span className="text-xs" style={{ color: 'var(--c-text3)' }}>
-                        ({p.answerCount} resp.)
+                        ✅{p.correctCount}/{p.answerCount}
                       </span>
                     </div>
                   ))}
