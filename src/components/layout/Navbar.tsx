@@ -139,6 +139,19 @@ export default function Navbar() {
             </>
           )}
 
+          {/* Botón panel admin (solo admins, fuera de /admin) */}
+          {!loading && isAdmin && location.pathname !== '/admin' && (
+            <button
+              onClick={() => navigate('/admin')}
+              title="Panel de administración"
+              className="text-xs font-bold px-2 py-1.5 rounded-lg transition-colors"
+              style={{ background: 'rgba(255,87,20,0.12)', color: '#FF5714', border: '1px solid rgba(255,87,20,0.4)' }}
+            >
+              <span className="sm:hidden">⚙️</span>
+              <span className="hidden sm:inline">⚙️ Admin</span>
+            </button>
+          )}
+
           {/* Theme toggle */}
           <button
             onClick={toggle}

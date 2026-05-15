@@ -37,6 +37,7 @@ export interface Category {
   isActive: boolean
   excludeFromRandom: boolean
   createdAt: number
+  order?: number   // posición manual; si undefined se ordena por createdAt
 }
 
 export interface GameAnswer {

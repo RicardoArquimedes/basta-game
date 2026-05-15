@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { Category } from '../../types'
 import {
   addCategory, toggleCategory, toggleExcludeFromRandom,
-  updateCategoryName, deleteCategory,
+  updateCategoryName, deleteCategory, reorderCategories,
 } from '../../services/categoryService'
 
 interface Props {
@@ -23,11 +23,16 @@ export default function CategoryManager({ categories, adminUid, onRefresh }: Pro
   // Confirmación eliminar
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
+  // Reordenamiento
+  const [reordering, setReordering] = useState(false)
+
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault()
     if (!newName.trim()) return
     setSaving(true)
-    await addCategory(newName.trim(), adminUid)
+    // Nueva categoría va al final del orden actual
+    const maxOrder = categories.reduce((m, c, i) => Math.max(m, c.order ?? i), -1)
+    await addCategory(newName.trim(), adminUid, maxOrder + 1)
     setNewName('')
     onRefresh()
     setSaving(false)
@@ -64,6 +69,18 @@ export default function CategoryManager({ categories, adminUid, onRefresh }: Pro
     onRefresh()
   }
 
+  async function handleMove(index: number, direction: 'up' | 'down') {
+    const j = direction === 'up' ? index - 1 : index + 1
+    if (j < 0 || j >= categories.length) return
+    setReordering(true)
+    // Normalizar orders según posición actual y luego intercambiar
+    const normalized = categories.map((c, i) => ({ id: c.id, order: i }))
+    ;[normalized[index].order, normalized[j].order] = [normalized[j].order, normalized[index].order]
+    await reorderCategories(normalized)
+    onRefresh()
+    setReordering(false)
+  }
+
   const activeCount = categories.filter(c => c.isActive && !c.excludeFromRandom).length
 
   return (
@@ -91,9 +108,11 @@ export default function CategoryManager({ categories, adminUid, onRefresh }: Pro
       </p>
 
       <div className="max-h-96 overflow-y-auto space-y-1 pr-1">
-        {categories.map(cat => {
+        {categories.map((cat, index) => {
           const isEditing = editingId === cat.id
           const isConfirmingDelete = confirmDeleteId === cat.id
+          const isFirst = index === 0
+          const isLast = index === categories.length - 1
 
           return (
             <div key={cat.id} className="rounded-lg overflow-hidden"
@@ -107,6 +126,28 @@ export default function CategoryManager({ categories, adminUid, onRefresh }: Pro
                   opacity: cat.isActive ? 1 : 0.55,
                 }}
               >
+                {/* Botones de orden ↑↓ */}
+                <div className="flex flex-col gap-0.5 shrink-0">
+                  <button
+                    onClick={() => handleMove(index, 'up')}
+                    disabled={isFirst || reordering}
+                    title="Mover arriba"
+                    className="w-5 h-4 flex items-center justify-center rounded text-xs disabled:opacity-20 transition-colors leading-none"
+                    style={{ background: 'var(--c-surface)', color: 'var(--c-text3)', border: '1px solid var(--c-border)' }}
+                  >
+                    ▲
+                  </button>
+                  <button
+                    onClick={() => handleMove(index, 'down')}
+                    disabled={isLast || reordering}
+                    title="Mover abajo"
+                    className="w-5 h-4 flex items-center justify-center rounded text-xs disabled:opacity-20 transition-colors leading-none"
+                    style={{ background: 'var(--c-surface)', color: 'var(--c-text3)', border: '1px solid var(--c-border)' }}
+                  >
+                    ▼
+                  </button>
+                </div>
+
                 {isEditing ? (
                   /* Input de edición */
                   <input

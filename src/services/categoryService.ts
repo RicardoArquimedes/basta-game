@@ -1,6 +1,6 @@
 import {
   collection, doc, addDoc, updateDoc, deleteDoc, getDocs,
-  query, orderBy, serverTimestamp,
+  writeBatch,
 } from 'firebase/firestore'
 import { db } from '../firebase'
 import { DEFAULT_CATEGORIES } from '../constants'
@@ -40,21 +40,30 @@ export async function seedMissingCategories() {
 }
 
 export async function getCategories(): Promise<Category[]> {
-  const q = query(collection(db, 'categories'), orderBy('createdAt', 'asc'))
-  const snap = await getDocs(q)
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }) as Category)
+  const snap = await getDocs(collection(db, 'categories'))
+  const cats = snap.docs.map(d => ({ id: d.id, ...d.data() }) as Category)
+  return cats.sort((a, b) => {
+    const aHas = a.order !== undefined
+    const bHas = b.order !== undefined
+    if (aHas && bHas) return a.order! - b.order!
+    if (!aHas && !bHas) return a.createdAt - b.createdAt
+    return aHas ? -1 : 1   // las ordenadas manualmente van primero
+  })
 }
 
-export async function addCategory(name: string, addedBy: string): Promise<Category> {
-  const ref = await addDoc(collection(db, 'categories'), {
+export async function addCategory(name: string, addedBy: string, order?: number): Promise<Category> {
+  const now = Date.now()
+  const data: Record<string, unknown> = {
     name,
     isCustom: true,
     addedBy,
     isActive: true,
     excludeFromRandom: false,
-    createdAt: Date.now(),
-  })
-  return { id: ref.id, name, isCustom: true, addedBy, isActive: true, excludeFromRandom: false, createdAt: Date.now() }
+    createdAt: now,
+  }
+  if (order !== undefined) data.order = order
+  const ref = await addDoc(collection(db, 'categories'), data)
+  return { id: ref.id, name, isCustom: true, addedBy, isActive: true, excludeFromRandom: false, createdAt: now, order }
 }
 
 export async function toggleCategory(id: string, isActive: boolean) {
@@ -71,4 +80,13 @@ export async function updateCategoryName(id: string, name: string) {
 
 export async function deleteCategory(id: string) {
   await deleteDoc(doc(db, 'categories', id))
+}
+
+/** Guarda el campo `order` para todas las categorías recibidas en una sola operación. */
+export async function reorderCategories(updates: Array<{ id: string; order: number }>) {
+  const batch = writeBatch(db)
+  for (const { id, order } of updates) {
+    batch.update(doc(db, 'categories', id), { order })
+  }
+  await batch.commit()
 }
