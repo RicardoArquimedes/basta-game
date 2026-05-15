@@ -207,7 +207,7 @@ export default function GamePage() {
         game?.status === 'player_turn'
       ) {
         setCheatToast(player.displayName)
-        const t = setTimeout(() => setCheatToast(null), 10000)
+        const t = setTimeout(() => setCheatToast(null), 15000)
         return () => clearTimeout(t)
       }
     })
@@ -383,9 +383,9 @@ export default function GamePage() {
 
   // ── Toast trampa (visible para todos menos el tramposo) ──────────────────────
   const cheatToastEl = cheatToast ? (
-    <div className="fixed top-16 left-0 right-0 z-40 flex justify-center pointer-events-none px-4">
+    <div className="fixed top-2 left-0 right-0 z-50 flex justify-center pointer-events-none px-4">
       <div
-        className="flex items-center gap-2 px-5 py-3 rounded-2xl shadow-2xl text-sm font-bold animate-bounce"
+        className="flex items-center gap-2 px-5 py-2.5 rounded-2xl shadow-2xl text-sm font-bold"
         style={{ background: 'rgba(20,20,20,0.95)', border: '2px solid #FF5714', color: '#FF5714', maxWidth: 340 }}
       >
         <span className="text-xl">🚨</span>
