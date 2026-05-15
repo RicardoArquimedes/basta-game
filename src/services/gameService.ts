@@ -132,6 +132,13 @@ export async function submitAnswer(
   const { currentTurnUid, turnOrder, turnIndex, rotationNumber, availableLetters, turnOrder: order } = game
   const playerName = players.find(p => p.uid === currentTurnUid)?.displayName ?? ''
 
+  // Calcular segundos usados para responder
+  const secondsUsed = noAnswer
+    ? (game.answerSeconds ?? 10)
+    : game.answerTimerStartAt
+      ? Math.min(game.answerSeconds ?? 10, Math.round((Date.now() - game.answerTimerStartAt) / 1000))
+      : (game.answerSeconds ?? 10)
+
   // Guardar respuesta
   const answerKey = `${currentTurnUid}_r${rotationNumber}`
   await setDoc(doc(db, 'games', gameId, 'answers', answerKey), {
@@ -145,6 +152,7 @@ export async function submitAnswer(
     noAnswer,
     points: 0,
     submittedAt: Date.now(),
+    secondsUsed,
   })
 
   // Siguiente jugador activo en la rotación
@@ -285,6 +293,14 @@ export async function validateAnswer(gameId: string, answerId: string, isValid: 
 
 export async function eliminatePlayer(gameId: string, uid: string) {
   await updateDoc(doc(db, 'games', gameId, 'players', uid), { status: 'eliminated' })
+}
+
+// Registrar trampa: elimina al jugador en esta categoría e incrementa su contador de trampas
+export async function recordCheat(gameId: string, uid: string) {
+  await updateDoc(doc(db, 'games', gameId, 'players', uid), {
+    status: 'eliminated',
+    cheatCount: increment(1),
+  })
 }
 
 export async function addBonusPoints(gameId: string, uid: string, pts: number) {

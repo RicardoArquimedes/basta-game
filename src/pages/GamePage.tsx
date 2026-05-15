@@ -8,7 +8,7 @@ import {
   continueNextRotation, validateAnswer, eliminatePlayer,
   endGame, endCategory, startNewCategory, undoNewCategory, undoEndCategory, undoEndGame,
   updateExcludedLetters, setPauseNextTurn, resumeFromPause, updateTimers, addBonusPoints,
-  adjustAnswerValidity,
+  adjustAnswerValidity, recordCheat,
 } from '../services/gameService'
 import { getCategories, addCategory } from '../services/categoryService'
 import { recordGameStats } from '../services/authService'
@@ -117,6 +117,8 @@ export default function GamePage() {
   const [bonusInputs, setBonusInputs] = useState<Record<string, number>>({})
   const [showScoreTable, setShowScoreTable] = useState(false)
   const [showCatReview, setShowCatReview] = useState(false)
+  const [newCatExcluded, setNewCatExcluded] = useState<string[] | null>(null)  // null = usar las del juego
+  const [showLetterPicker, setShowLetterPicker] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   // Track which turn we've already handled to avoid double-submit
@@ -232,7 +234,7 @@ export default function GamePage() {
       cheatHandledRef.current = true
       setCaughtCheating(true)
       if (gameId && profile) {
-        await eliminatePlayer(gameId, profile.uid)
+        await recordCheat(gameId, profile.uid)
         await addBonusPoints(gameId, profile.uid, -10)
       }
     }
@@ -318,9 +320,12 @@ export default function GamePage() {
     if (!gameId || !selectedCatId || !game) return
     const cat = categories.find(c => c.id === selectedCatId)
     if (!cat) return
-    await startNewCategory(gameId, cat.name, cat.id, players, game.excludedLetters, game)
+    const excluded = newCatExcluded ?? game.excludedLetters
+    await startNewCategory(gameId, cat.name, cat.id, players, excluded, game)
     setShowCatPicker(false)
     setSelectedCatId('')
+    setNewCatExcluded(null)
+    setShowLetterPicker(false)
   }
 
   if (!game || !profile) {
@@ -1285,6 +1290,54 @@ export default function GamePage() {
               </div>
             </div>
 
+            {/* Selector de letras para esta categoría */}
+            <div>
+              <button
+                onClick={() => setShowLetterPicker(v => !v)}
+                className="w-full flex items-center justify-between text-xs font-semibold py-1.5"
+                style={{ color: 'var(--c-text3)' }}
+              >
+                <span>🔤 Letras para esta categoría</span>
+                <span>{showLetterPicker ? '▲ ocultar' : '▼ personalizar'}</span>
+              </button>
+              {showLetterPicker && (
+                <div className="mt-2 space-y-2">
+                  <div className="flex flex-wrap gap-1">
+                    {ALL_LETTERS.map(l => {
+                      const effectiveExcluded = newCatExcluded ?? game.excludedLetters
+                      const excluded = effectiveExcluded.includes(l)
+                      return (
+                        <button key={l}
+                          onClick={() => {
+                            const base = newCatExcluded ?? game.excludedLetters
+                            setNewCatExcluded(
+                              excluded ? base.filter(x => x !== l) : [...base, l]
+                            )
+                          }}
+                          className="w-8 h-8 text-xs font-bold rounded-lg transition-colors"
+                          style={excluded
+                            ? { background: '#EC4E20', color: 'white' }
+                            : { background: 'var(--c-surface2)', color: 'var(--c-text2)' }}
+                        >
+                          {l}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <p className="text-xs" style={{ color: 'var(--c-text3)' }}>
+                    {ALL_LETTERS.length - (newCatExcluded ?? game.excludedLetters).length} letras disponibles
+                    {newCatExcluded && (
+                      <button
+                        onClick={() => setNewCatExcluded(null)}
+                        className="ml-2 underline"
+                        style={{ color: '#FF5714' }}
+                      >restablecer</button>
+                    )}
+                  </p>
+                </div>
+              )}
+            </div>
+
             <button
               onClick={handleStartNewCategory}
               disabled={!selectedCatId}
@@ -1324,6 +1377,24 @@ export default function GamePage() {
   // ════════════════════════════════════════════════════════════════════════════
   if (game.status === 'game_over') {
     const sorted = [...players].sort((a, b) => b.score - a.score)
+
+    // ── Estadísticas ────────────────────────────────────────────────────────────
+    // Tiempo promedio de respuesta (solo respuestas con secondsUsed registrado)
+    const timedAnswers = allAnswers.filter(a => !a.noAnswer && a.secondsUsed !== undefined)
+    const playerStats = players.map(p => {
+      const mine = timedAnswers.filter(a => a.uid === p.uid)
+      const avgSecs = mine.length > 0
+        ? mine.reduce((s, a) => s + (a.secondsUsed ?? 0), 0) / mine.length
+        : null
+      return { ...p, avgSecs, answerCount: mine.length }
+    })
+    const fastest = [...playerStats]
+      .filter(p => p.avgSecs !== null && p.answerCount >= 1)
+      .sort((a, b) => (a.avgSecs ?? 99) - (b.avgSecs ?? 99))[0]
+    const mostCheater = [...players]
+      .filter(p => (p.cheatCount ?? 0) > 0)
+      .sort((a, b) => (b.cheatCount ?? 0) - (a.cheatCount ?? 0))[0]
+
     return (
       <div className="max-w-lg mx-auto p-4 space-y-4">
         <div className="text-center rounded-2xl p-6 text-white" style={{ background: 'linear-gradient(135deg, #FF5714, #111111)' }}>
@@ -1344,6 +1415,74 @@ export default function GamePage() {
             </div>
           ))}
         </div>
+
+        {/* Estadísticas de la partida */}
+        {(fastest || mostCheater) && (
+          <div className="rounded-2xl shadow p-4 space-y-2" style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
+            <p className="text-xs font-bold uppercase mb-2" style={{ color: 'var(--c-text3)' }}>📊 Estadísticas</p>
+
+            {fastest && (
+              <div className="flex items-center gap-3 rounded-xl px-3 py-2.5"
+                style={{ background: 'rgba(27,231,255,0.08)', border: '1px solid rgba(27,231,255,0.3)' }}>
+                <span className="text-2xl">⚡</span>
+                <div className="flex-1">
+                  <p className="text-xs" style={{ color: 'var(--c-text3)' }}>Más rápido respondiendo</p>
+                  <p className="font-bold" style={{ color: 'var(--c-text)' }}>{fastest.displayName}</p>
+                </div>
+                <span className="font-black tabular-nums" style={{ color: '#1BE7FF' }}>
+                  {fastest.avgSecs!.toFixed(1)}s prom.
+                </span>
+              </div>
+            )}
+
+            {/* Tabla completa de tiempos */}
+            {playerStats.filter(p => p.answerCount > 0).length > 1 && (
+              <div className="space-y-1 pt-1">
+                {[...playerStats]
+                  .filter(p => p.answerCount > 0)
+                  .sort((a, b) => (a.avgSecs ?? 99) - (b.avgSecs ?? 99))
+                  .map((p, i) => (
+                    <div key={p.uid} className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm"
+                      style={{ border: '1px solid var(--c-border)' }}>
+                      <span className="w-5 text-center text-xs" style={{ color: 'var(--c-text3)' }}>
+                        {i === 0 ? '⚡' : `${i + 1}.`}
+                      </span>
+                      <span className="flex-1 truncate" style={{ color: 'var(--c-text)' }}>{p.displayName}</span>
+                      <span className="tabular-nums font-semibold text-xs" style={{ color: 'var(--c-text2)' }}>
+                        {p.avgSecs !== null ? `${p.avgSecs!.toFixed(1)}s` : '—'}
+                      </span>
+                      <span className="text-xs" style={{ color: 'var(--c-text3)' }}>
+                        ({p.answerCount} resp.)
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            )}
+
+            {mostCheater && (
+              <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 mt-1"
+                style={{ background: 'rgba(255,87,20,0.08)', border: '1px solid rgba(255,87,20,0.3)' }}>
+                <span className="text-2xl">🚨</span>
+                <div className="flex-1">
+                  <p className="text-xs" style={{ color: 'var(--c-text3)' }}>Más tramposo</p>
+                  <p className="font-bold" style={{ color: 'var(--c-text)' }}>{mostCheater.displayName}</p>
+                </div>
+                <span className="font-black" style={{ color: '#FF5714' }}>
+                  {mostCheater.cheatCount}x
+                </span>
+              </div>
+            )}
+
+            {!mostCheater && (
+              <div className="flex items-center gap-3 rounded-xl px-3 py-2.5"
+                style={{ background: 'rgba(110,235,131,0.08)', border: '1px solid rgba(110,235,131,0.3)' }}>
+                <span className="text-2xl">✅</span>
+                <p className="font-semibold" style={{ color: 'var(--c-text)' }}>¡Nadie hizo trampa!</p>
+              </div>
+            )}
+          </div>
+        )}
+
         {isAdmin && (
           <button
             onClick={() => undoEndGame(gameId!)}

@@ -26,6 +26,7 @@ export interface Player {
   score: number
   status: PlayerStatus
   joinedAt: number
+  cheatCount?: number   // veces que fue atrapado haciendo trampa
 }
 
 export interface Category {
@@ -49,6 +50,7 @@ export interface GameAnswer {
   noAnswer: boolean
   points: number
   submittedAt: number
+  secondsUsed?: number  // segundos que tardó en responder (0 = instantáneo, answerSeconds = agotó el tiempo)
 }
 
 export interface Game {
