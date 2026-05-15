@@ -15,8 +15,27 @@ export async function seedCategories() {
       isCustom: false,
       addedBy: 'system',
       isActive: true,
+      excludeFromRandom: false,
       createdAt: Date.now(),
     })
+  }
+}
+
+// Agrega categorías nuevas que no existan todavía en la BD
+export async function seedMissingCategories() {
+  const snap = await getDocs(collection(db, 'categories'))
+  const existingNames = new Set(snap.docs.map(d => (d.data().name as string).toLowerCase()))
+  for (const cat of DEFAULT_CATEGORIES) {
+    if (!existingNames.has(cat.name.toLowerCase())) {
+      await addDoc(collection(db, 'categories'), {
+        name: cat.name,
+        isCustom: false,
+        addedBy: 'system',
+        isActive: true,
+        excludeFromRandom: false,
+        createdAt: Date.now(),
+      })
+    }
   }
 }
 
@@ -32,11 +51,16 @@ export async function addCategory(name: string, addedBy: string): Promise<Catego
     isCustom: true,
     addedBy,
     isActive: true,
+    excludeFromRandom: false,
     createdAt: Date.now(),
   })
-  return { id: ref.id, name, isCustom: true, addedBy, isActive: true, createdAt: Date.now() }
+  return { id: ref.id, name, isCustom: true, addedBy, isActive: true, excludeFromRandom: false, createdAt: Date.now() }
 }
 
 export async function toggleCategory(id: string, isActive: boolean) {
   await updateDoc(doc(db, 'categories', id), { isActive })
+}
+
+export async function toggleExcludeFromRandom(id: string, exclude: boolean) {
+  await updateDoc(doc(db, 'categories', id), { excludeFromRandom: exclude })
 }

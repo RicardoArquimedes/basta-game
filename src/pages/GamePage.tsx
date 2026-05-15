@@ -9,7 +9,7 @@ import {
   endGame, endCategory, startNewCategory, undoEndCategory, undoEndGame,
   updateExcludedLetters, setPauseNextTurn, resumeFromPause, updateTimers,
 } from '../services/gameService'
-import { getCategories } from '../services/categoryService'
+import { getCategories, addCategory } from '../services/categoryService'
 import { recordGameStats } from '../services/authService'
 import CategoryCard from '../components/game/CategoryCard'
 import type { Category, GameAnswer } from '../types'
@@ -108,6 +108,8 @@ export default function GamePage() {
   const [caughtCheating, setCaughtCheating] = useState(false)
   const [copied, setCopied] = useState(false)
   const [cheatToast, setCheatToast] = useState<string | null>(null)
+  const [newCatName, setNewCatName] = useState('')
+  const [addingCat, setAddingCat] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   // Track which turn we've already handled to avoid double-submit
@@ -266,6 +268,23 @@ export default function GamePage() {
     setShowCatPicker(false)
   }
 
+  function handleRandomCategory() {
+    const pool = categories.filter(c => c.isActive && !c.excludeFromRandom)
+    if (pool.length === 0) return
+    const random = pool[Math.floor(Math.random() * pool.length)]
+    setSelectedCatId(random.id)
+  }
+
+  async function handleAddCategoryInline() {
+    if (!newCatName.trim() || !profile) return
+    setAddingCat(true)
+    const cat = await addCategory(newCatName.trim(), profile.uid)
+    setCategories(prev => [...prev, cat])
+    setSelectedCatId(cat.id)
+    setNewCatName('')
+    setAddingCat(false)
+  }
+
   async function handleStartNewCategory() {
     if (!gameId || !selectedCatId || !game) return
     const cat = categories.find(c => c.id === selectedCatId)
@@ -382,14 +401,47 @@ export default function GamePage() {
             </h3>
 
             {/* Categoría — siempre visible */}
-            <div>
-              <p className="text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Categoría</p>
-              <select value={selectedCatId} onChange={e => setSelectedCatId(e.target.value)}
-                className="w-full border-2 focus:border-brand-500 rounded-xl px-3 py-2.5 text-sm font-body focus:outline-none transition-colors"
-                style={{ background: 'var(--c-input)', borderColor: 'var(--c-border)', color: 'var(--c-text)' }}>
-                <option value="">— Elige una categoría —</option>
-                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+            <div className="space-y-2">
+              <p className="text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: 'var(--c-text3)' }}>Categoría</p>
+              <div className="flex gap-2">
+                <select value={selectedCatId} onChange={e => setSelectedCatId(e.target.value)}
+                  className="flex-1 rounded-xl px-3 py-2.5 text-sm focus:outline-none"
+                  style={{ background: 'var(--c-input)', border: '1px solid var(--c-border)', color: 'var(--c-text)' }}>
+                  <option value="">— Elige una categoría —</option>
+                  {categories.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}{c.excludeFromRandom ? ' 🚫' : ''}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={handleRandomCategory}
+                  title="Elegir categoría aleatoria"
+                  className="w-11 h-11 rounded-xl text-xl flex items-center justify-center transition-all hover:scale-110 active:scale-95"
+                  style={{ background: 'rgba(110,235,131,0.15)', border: '1px solid rgba(110,235,131,0.4)', color: '#6EEB83' }}
+                >
+                  🎲
+                </button>
+              </div>
+              {/* Agregar categoría inline */}
+              <div className="flex gap-2">
+                <input
+                  value={newCatName}
+                  onChange={e => setNewCatName(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleAddCategoryInline()}
+                  placeholder="+ Nueva categoría..."
+                  className="flex-1 rounded-xl px-3 py-2 text-sm focus:outline-none"
+                  style={{ background: 'var(--c-input)', border: '1px solid var(--c-border)', color: 'var(--c-text)' }}
+                />
+                <button
+                  onClick={handleAddCategoryInline}
+                  disabled={!newCatName.trim() || addingCat}
+                  className="disabled:opacity-40 text-white text-sm font-bold px-3 py-2 rounded-xl transition-colors"
+                  style={{ background: '#FF5714' }}
+                >
+                  {addingCat ? '...' : 'OK'}
+                </button>
+              </div>
             </div>
 
             {/* Timers */}
@@ -942,14 +994,42 @@ export default function GamePage() {
           <div className="rounded-2xl shadow p-4 space-y-3" style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
             <p className="text-xs font-bold uppercase tracking-wide" style={{ color: 'var(--c-text3)' }}>⚙️ Controles admin</p>
 
-            <div>
+            <div className="space-y-2">
               <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--c-text2)' }}>Categoría para la siguiente ronda</p>
-              <select value={selectedCatId} onChange={e => setSelectedCatId(e.target.value)}
-                className="w-full rounded-xl px-3 py-2.5 text-sm focus:outline-none"
-                style={{ background: 'var(--c-input)', border: '1px solid var(--c-border)', color: 'var(--c-text)' }}>
-                <option value="">— Elige una categoría —</option>
-                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              <div className="flex gap-2">
+                <select value={selectedCatId} onChange={e => setSelectedCatId(e.target.value)}
+                  className="flex-1 rounded-xl px-3 py-2.5 text-sm focus:outline-none"
+                  style={{ background: 'var(--c-input)', border: '1px solid var(--c-border)', color: 'var(--c-text)' }}>
+                  <option value="">— Elige una categoría —</option>
+                  {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+                <button
+                  onClick={handleRandomCategory}
+                  title="Elegir categoría aleatoria"
+                  className="w-11 h-11 rounded-xl text-xl flex items-center justify-center transition-all hover:scale-110 active:scale-95"
+                  style={{ background: 'rgba(110,235,131,0.15)', border: '1px solid rgba(110,235,131,0.4)', color: '#6EEB83' }}
+                >
+                  🎲
+                </button>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  value={newCatName}
+                  onChange={e => setNewCatName(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleAddCategoryInline()}
+                  placeholder="+ Nueva categoría..."
+                  className="flex-1 rounded-xl px-3 py-2 text-sm focus:outline-none"
+                  style={{ background: 'var(--c-input)', border: '1px solid var(--c-border)', color: 'var(--c-text)' }}
+                />
+                <button
+                  onClick={handleAddCategoryInline}
+                  disabled={!newCatName.trim() || addingCat}
+                  className="disabled:opacity-40 text-white text-sm font-bold px-3 py-2 rounded-xl transition-colors"
+                  style={{ background: '#FF5714' }}
+                >
+                  {addingCat ? '...' : 'OK'}
+                </button>
+              </div>
             </div>
 
             <button

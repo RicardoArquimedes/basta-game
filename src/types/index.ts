@@ -34,6 +34,7 @@ export interface Category {
   isCustom: boolean
   addedBy: string
   isActive: boolean
+  excludeFromRandom: boolean
   createdAt: number
 }
 

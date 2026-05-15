@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { onAuthStateChanged } from 'firebase/auth'
 import { auth } from './firebase'
 import { getOrCreateProfile, signOut } from './services/authService'
-import { seedCategories } from './services/categoryService'
+import { seedCategories, seedMissingCategories } from './services/categoryService'
 import { useAuthStore } from './store/authStore'
 import { useThemeStore } from './store/themeStore'
 import Navbar from './components/layout/Navbar'
@@ -99,8 +99,9 @@ export default function App() {
         try {
           const profile = await getOrCreateProfile(user)
           setProfile(profile)
-          // Solo seed cuando ya tenemos permisos
+          // Seed inicial + categorías nuevas que falten
           seedCategories().catch(() => {})
+          seedMissingCategories().catch(() => {})
         } catch (err: any) {
           console.error('Error cargando perfil:', err)
           setError(err?.message ?? 'Error desconocido')
