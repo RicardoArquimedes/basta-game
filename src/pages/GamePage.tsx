@@ -6,7 +6,7 @@ import {
   subscribeGame, subscribePlayers, subscribeAnswers,
   startGame, beginTurns, playerSelectLetter, submitAnswer,
   continueNextRotation, validateAnswer, eliminatePlayer,
-  endGame, endCategory, startNewCategory, undoEndCategory, undoEndGame,
+  endGame, endCategory, startNewCategory, undoNewCategory, undoEndCategory, undoEndGame,
   updateExcludedLetters, setPauseNextTurn, resumeFromPause, updateTimers, addBonusPoints,
 } from '../services/gameService'
 import { getCategories, addCategory } from '../services/categoryService'
@@ -114,6 +114,7 @@ export default function GamePage() {
   const [newCatName, setNewCatName] = useState('')
   const [addingCat, setAddingCat] = useState(false)
   const [bonusInputs, setBonusInputs] = useState<Record<string, number>>({})
+  const [showScoreTable, setShowScoreTable] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   // Track which turn we've already handled to avoid double-submit
@@ -293,7 +294,7 @@ export default function GamePage() {
     if (!gameId || !selectedCatId || !game) return
     const cat = categories.find(c => c.id === selectedCatId)
     if (!cat) return
-    await startNewCategory(gameId, cat.name, cat.id, players, game.excludedLetters, game.categoryNumber)
+    await startNewCategory(gameId, cat.name, cat.id, players, game.excludedLetters, game)
     setShowCatPicker(false)
     setSelectedCatId('')
   }
@@ -305,6 +306,56 @@ export default function GamePage() {
       </div>
     )
   }
+
+  // ── Tabla de puntajes (modal flotante) ───────────────────────────────────────
+  const scoreTableModal = showScoreTable ? (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      onClick={() => setShowScoreTable(false)}>
+      <div className="w-full max-w-sm rounded-2xl shadow-2xl p-5 space-y-3"
+        style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}
+        onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-display font-semibold" style={{ color: '#FF5714' }}>📊 Tabla de puntajes</h2>
+          <button onClick={() => setShowScoreTable(false)}
+            className="w-7 h-7 rounded-lg text-sm font-bold"
+            style={{ background: 'var(--c-surface2)', color: 'var(--c-text2)' }}>✕</button>
+        </div>
+        <div className="space-y-1.5">
+          {[...players].sort((a, b) => b.score - a.score).map((p, i) => (
+            <div key={p.uid} className="flex items-center gap-2 rounded-xl px-3 py-2"
+              style={i === 0
+                ? { background: 'rgba(232,170,20,0.15)', border: '2px solid #E8AA14' }
+                : { border: '1px solid var(--c-border)' }}>
+              <span className="text-base w-6 text-center">
+                {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`}
+              </span>
+              <span className="flex-1 font-semibold truncate" style={{ color: 'var(--c-text)' }}>
+                {p.displayName}
+                {p.status === 'eliminated' && <span className="text-xs ml-1" style={{ color: 'var(--c-text3)' }}>(elim.)</span>}
+              </span>
+              <span className="font-black tabular-nums" style={{ color: '#FF5714' }}>{p.score}pts</span>
+            </div>
+          ))}
+        </div>
+        {game && (
+          <p className="text-xs text-center" style={{ color: 'var(--c-text3)' }}>
+            Categoría {game.categoryNumber} · {game.currentCategory}
+          </p>
+        )}
+      </div>
+    </div>
+  ) : null
+
+  const scoreFabEl = (
+    <button
+      onClick={() => setShowScoreTable(true)}
+      title="Ver tabla de puntajes"
+      className="fixed bottom-5 right-5 z-30 w-12 h-12 rounded-full shadow-xl flex items-center justify-center text-xl transition-all hover:scale-110 active:scale-95"
+      style={{ background: '#FF5714', color: 'white' }}
+    >
+      📊
+    </button>
+  )
 
   // ── Toast trampa (visible para todos menos el tramposo) ──────────────────────
   const cheatToastEl = cheatToast ? (
@@ -555,11 +606,22 @@ export default function GamePage() {
           </p>
         </div>
         {isAdmin && (
-          <button onClick={() => beginTurns(gameId!)}
-            className="text-white font-display font-semibold px-10 py-4 rounded-2xl text-lg transition-all hover:scale-105 active:scale-95 shadow-lg"
-            style={{ background: '#FF5714' }}>
-            ▶ ¡Empezar!
-          </button>
+          <div className="flex flex-col items-center gap-3 w-full max-w-xs">
+            <button onClick={() => beginTurns(gameId!)}
+              className="w-full text-white font-display font-semibold px-10 py-4 rounded-2xl text-lg transition-all hover:scale-105 active:scale-95 shadow-lg"
+              style={{ background: '#FF5714' }}>
+              ▶ ¡Empezar!
+            </button>
+            {game.prevCategoryId && (
+              <button
+                onClick={() => undoNewCategory(gameId!, game)}
+                className="text-sm font-bold py-2 px-6 rounded-xl transition-colors"
+                style={{ background: 'var(--c-surface2)', color: 'var(--c-text2)' }}
+              >
+                ↩ Cancelar — volver a categoría anterior
+              </button>
+            )}
+          </div>
         )}
         {!isAdmin && <p className="text-sm animate-pulse" style={{ color: 'var(--c-text3)' }}>El admin iniciará el juego...</p>}
       </div>
@@ -575,6 +637,7 @@ export default function GamePage() {
 
     return (
       <div className="max-w-lg mx-auto p-4 space-y-3">
+        {scoreTableModal}{scoreFabEl}
         {cheatToastEl}
         {/* Header: categoría y progreso */}
         <div className="bg-gradient-to-br from-brand-600 to-brand-800 rounded-2xl px-4 py-3 text-white">
@@ -788,6 +851,7 @@ export default function GamePage() {
 
     return (
       <div className="max-w-lg mx-auto p-4 space-y-4">
+        {scoreTableModal}{scoreFabEl}
         {cheatToastEl}
         <div className="bg-gradient-to-br from-red-500 to-orange-500 rounded-2xl p-4 text-white text-center">
           <p className="text-2xl font-black">⏸ Juego pausado</p>
@@ -863,6 +927,7 @@ export default function GamePage() {
 
     return (
       <div className="max-w-lg mx-auto p-4 space-y-4">
+        {scoreTableModal}{scoreFabEl}
         {cheatToastEl}
         <div className="bg-gradient-to-br from-brand-600 to-charcoal rounded-2xl p-4 text-white text-center">
           <p className="text-xs uppercase tracking-widest opacity-80">Rotación {game.rotationNumber} completada</p>
@@ -978,6 +1043,7 @@ export default function GamePage() {
 
     return (
       <div className="max-w-lg mx-auto p-4 space-y-4">
+        {scoreTableModal}{scoreFabEl}
         <div className="rounded-2xl p-5 text-center text-white" style={{ background: 'linear-gradient(135deg, #FF5714, #333)' }}>
           <p className="text-xs uppercase tracking-widest opacity-75 mb-1">Categoría {game.categoryNumber} completada</p>
           <h2 className="text-2xl font-display font-semibold">{game.currentCategory}</h2>

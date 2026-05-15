@@ -302,7 +302,7 @@ export async function startNewCategory(
   categoryId: string,
   allPlayers: Player[],
   excludedLetters: string[],
-  currentCategoryNumber: number,
+  currentGame: Game,
 ) {
   const gameSnap = await getDoc(doc(db, 'games', gameId))
   const currentRotation = gameSnap.data()?.rotationNumber ?? 0
@@ -316,9 +316,12 @@ export async function startNewCategory(
   }
   batch.update(doc(db, 'games', gameId), {
     status: 'category_reveal',
+    // Guardar categoría anterior para poder deshacer
+    prevCategory: currentGame.currentCategory,
+    prevCategoryId: currentGame.currentCategoryId,
     currentCategory: category,
     currentCategoryId: categoryId,
-    categoryNumber: currentCategoryNumber + 1,
+    categoryNumber: currentGame.categoryNumber + 1,
     availableLetters: available,
     usedLetters: [],
     turnOrder: order,
@@ -331,6 +334,27 @@ export async function startNewCategory(
     pauseNextTurn: false,
   })
   await batch.commit()
+}
+
+export async function undoNewCategory(gameId: string, game: Game) {
+  await updateDoc(doc(db, 'games', gameId), {
+    status: 'category_done',
+    currentCategory: game.prevCategory ?? game.currentCategory,
+    currentCategoryId: game.prevCategoryId ?? game.currentCategoryId,
+    categoryNumber: Math.max(1, game.categoryNumber - 1),
+    prevCategory: '',
+    prevCategoryId: '',
+  })
+}
+
+// Partidas activas para el dashboard del admin
+export async function getActiveGames(): Promise<Game[]> {
+  const active = ['lobby', 'category_reveal', 'player_turn', 'turn_paused', 'rotation_end', 'category_done']
+  const q = query(collection(db, 'games'), where('status', 'in', active))
+  const snap = await getDocs(q)
+  return snap.docs
+    .map(d => ({ id: d.id, ...d.data() }) as Game)
+    .sort((a, b) => b.createdAt - a.createdAt)
 }
 
 export async function undoEndCategory(gameId: string) {

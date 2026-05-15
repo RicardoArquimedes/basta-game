@@ -80,5 +80,7 @@ export interface Game {
   currentCategory: string
   currentCategoryId: string
   categoryNumber: number
+  prevCategory?: string
+  prevCategoryId?: string
   createdAt: number
 }
