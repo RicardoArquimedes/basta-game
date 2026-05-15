@@ -81,9 +81,15 @@ export default function AdminPage() {
     <div className="max-w-lg mx-auto p-4 space-y-4">
 
       {/* Header */}
-      <div className="rounded-2xl p-5 text-white" style={{ background: 'linear-gradient(135deg, #FF5714, #111)' }}>
+      <div className="rounded-2xl p-5 text-white space-y-3" style={{ background: 'linear-gradient(135deg, #FF5714, #111)' }}>
+        <button
+          onClick={() => navigate('/')}
+          className="text-sm font-bold opacity-80 hover:opacity-100 transition-opacity flex items-center gap-1"
+        >
+          ← Volver al inicio
+        </button>
         <h1 className="text-2xl font-display font-semibold">Panel de Administración</h1>
-        <p className="text-sm mt-1 opacity-75">Gestiona categorías y partidas activas</p>
+        <p className="text-sm opacity-75">Gestiona categorías y partidas activas</p>
       </div>
 
       {/* Dashboard partidas activas */}

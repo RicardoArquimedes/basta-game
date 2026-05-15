@@ -502,8 +502,16 @@ export default function GamePage() {
       }
     }
 
+    // Zumbido sutil + auto-dismiss a los 8 segundos
+    navigator.vibrate?.([300, 100, 300, 100, 200])
+    const cheatTimer = setTimeout(handleCheatOk, 8000)
+
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center p-6" style={{ background: '#111111' }}>
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center p-6"
+        style={{ background: '#111111' }}
+        // Limpiar timer si el usuario pulsa OK antes
+        ref={el => { if (!el) clearTimeout(cheatTimer) }}
+      >
         <img src="/logo.svg" alt="BASTA" className="w-28 h-28 mb-6 animate-bounce" />
         <h1
           className="text-4xl font-display font-semibold text-white text-center mb-3"
@@ -528,12 +536,15 @@ export default function GamePage() {
           </p>
         </div>
         <button
-          onClick={handleCheatOk}
+          onClick={() => { clearTimeout(cheatTimer); handleCheatOk() }}
           className="px-10 py-3 rounded-xl font-display font-semibold text-white text-lg transition-all hover:scale-105 active:scale-95"
           style={{ background: '#FF5714' }}
         >
           OK, entendido
         </button>
+        <p className="text-xs mt-4 animate-pulse" style={{ color: '#555' }}>
+          Se cerrará automáticamente en 8 segundos…
+        </p>
       </div>
     )
   }
