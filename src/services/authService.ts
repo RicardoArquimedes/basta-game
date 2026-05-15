@@ -6,6 +6,7 @@ import {
   EmailAuthProvider,
   signOut as firebaseSignOut,
   updateProfile,
+  sendPasswordResetEmail,
 } from 'firebase/auth'
 import { doc, setDoc, getDoc, updateDoc, increment } from 'firebase/firestore'
 import { auth, db } from '../firebase'
@@ -121,4 +122,10 @@ export async function updateDisplayName(uid: string, newName: string) {
 
 export async function setAdminRole(uid: string, isAdmin: boolean) {
   await setDoc(doc(db, 'users', uid), { isAdmin }, { merge: true })
+}
+
+export async function resetPassword(email: string) {
+  const trimmed = email.trim()
+  if (!trimmed) throw new Error('Ingresa tu correo electrónico')
+  await sendPasswordResetEmail(auth, trimmed)
 }

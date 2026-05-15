@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { register, login, loginAsGuest } from '../../services/authService'
+import { register, login, loginAsGuest, resetPassword } from '../../services/authService'
 
 interface Props {
   onSuccess: () => void
@@ -15,7 +15,39 @@ export default function AuthForm({ onSuccess }: Props) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  // Recuperar contraseña
+  const [showReset, setShowReset] = useState(false)
+  const [resetEmail, setResetEmail] = useState('')
+  const [resetSent, setResetSent] = useState(false)
+  const [resetError, setResetError] = useState('')
+  const [resetLoading, setResetLoading] = useState(false)
+
   function clear() { setError(''); setName(''); setEmail(''); setPassword('') }
+
+  async function handleReset(e: React.FormEvent) {
+    e.preventDefault()
+    setResetError('')
+    setResetLoading(true)
+    try {
+      await resetPassword(resetEmail)
+      setResetSent(true)
+    } catch (err: any) {
+      const msg: Record<string, string> = {
+        'auth/invalid-email':  'Correo inválido',
+        'auth/user-not-found': 'No existe una cuenta con ese correo',
+      }
+      setResetError(msg[err.code] ?? 'No se pudo enviar el correo, intenta de nuevo')
+    } finally {
+      setResetLoading(false)
+    }
+  }
+
+  function closeReset() {
+    setShowReset(false)
+    setResetEmail('')
+    setResetSent(false)
+    setResetError('')
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -107,7 +139,19 @@ export default function AuthForm({ onSuccess }: Props) {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--c-text2)' }}>Contraseña</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-sm font-medium" style={{ color: 'var(--c-text2)' }}>Contraseña</label>
+                {mode === 'login' && (
+                  <button
+                    type="button"
+                    onClick={() => { setShowReset(true); setResetEmail(email) }}
+                    className="text-xs hover:underline"
+                    style={{ color: '#1BE7FF' }}
+                  >
+                    ¿Olvidaste tu contraseña?
+                  </button>
+                )}
+              </div>
               <input
                 type="password"
                 value={password}
@@ -148,6 +192,87 @@ export default function AuthForm({ onSuccess }: Props) {
             Regístrate
           </button>
         </p>
+      )}
+
+      {/* Modal recuperar contraseña */}
+      {showReset && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          onClick={closeReset}>
+          <div className="w-full max-w-sm rounded-2xl shadow-2xl p-6 space-y-4"
+            style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}
+            onClick={e => e.stopPropagation()}>
+
+            <div className="text-center">
+              <div className="text-4xl mb-2">🔑</div>
+              <h2 className="text-lg font-display font-semibold" style={{ color: '#FF5714' }}>
+                Recuperar contraseña
+              </h2>
+              <p className="text-xs mt-1" style={{ color: 'var(--c-text3)' }}>
+                Te enviaremos un enlace para restablecer tu contraseña
+              </p>
+            </div>
+
+            {resetSent ? (
+              <div className="space-y-4">
+                <div className="rounded-xl p-4 text-center space-y-1"
+                  style={{ background: 'rgba(110,235,131,0.1)', border: '1px solid rgba(110,235,131,0.3)' }}>
+                  <p className="text-2xl">✅</p>
+                  <p className="text-sm font-bold" style={{ color: '#6EEB83' }}>¡Correo enviado!</p>
+                  <p className="text-xs" style={{ color: 'var(--c-text3)' }}>
+                    Revisa tu bandeja de entrada en <strong>{resetEmail}</strong> y sigue las instrucciones.
+                  </p>
+                </div>
+                <button
+                  onClick={closeReset}
+                  className="w-full text-white font-bold py-3 rounded-xl transition-all hover:scale-[1.02] active:scale-95"
+                  style={{ background: '#FF5714' }}>
+                  Volver al inicio de sesión
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleReset} className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium mb-1" style={{ color: 'var(--c-text2)' }}>
+                    Correo electrónico
+                  </label>
+                  <input
+                    type="email"
+                    value={resetEmail}
+                    onChange={e => setResetEmail(e.target.value)}
+                    placeholder="tu@correo.com"
+                    autoFocus
+                    required
+                    className="w-full rounded-xl px-4 py-3 focus:outline-none"
+                    style={{ background: 'var(--c-input)', border: '1px solid var(--c-border)', color: 'var(--c-text)' }}
+                  />
+                </div>
+
+                {resetError && (
+                  <p className="text-sm text-center rounded-xl p-2"
+                    style={{ color: '#ff6b6b', background: 'rgba(255,107,107,0.1)' }}>
+                    {resetError}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={resetLoading || !resetEmail.trim()}
+                  className="w-full disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-all hover:scale-[1.02] active:scale-95"
+                  style={{ background: '#FF5714' }}>
+                  {resetLoading ? 'Enviando...' : '📧 Enviar enlace de recuperación'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={closeReset}
+                  className="w-full font-bold py-2.5 rounded-xl text-sm transition-colors"
+                  style={{ background: 'var(--c-surface2)', color: 'var(--c-text2)' }}>
+                  Cancelar
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
       )}
     </div>
   )
