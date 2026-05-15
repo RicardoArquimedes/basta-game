@@ -1,16 +1,41 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
-import { createGame, findGameByCode, joinGame } from '../services/gameService'
+import { useGameStore } from '../store/gameStore'
+import { createGame, findGameByCode, joinGame, getActiveGameForPlayer } from '../services/gameService'
 
 export default function Home() {
   const { profile } = useAuthStore()
+  const { activeGameId, reset } = useGameStore()
   const navigate = useNavigate()
   const [mode, setMode] = useState<null | 'create' | 'join'>(null)
   const [code, setCode] = useState('')
   const [maxPlayers, setMaxPlayers] = useState(6)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [activeGame, setActiveGame] = useState<{ gameId: string; category: string; status: string } | null>(null)
+  const [checkingGame, setCheckingGame] = useState(false)
+
+  // Verificar si el jugador tiene una partida activa en Firestore
+  useEffect(() => {
+    if (!profile || profile.isAdmin) return
+    if (!activeGameId) return
+    setCheckingGame(true)
+    getActiveGameForPlayer(profile.uid)
+      .then(result => {
+        if (result) {
+          setActiveGame({
+            gameId: result.gameId,
+            category: result.game.currentCategory || '',
+            status: result.game.status,
+          })
+        } else {
+          reset() // limpiar gameId obsoleto
+        }
+      })
+      .catch(() => {})
+      .finally(() => setCheckingGame(false))
+  }, [profile?.uid])
 
   if (!profile) return null
 
@@ -67,6 +92,40 @@ export default function Home() {
           <p className="text-xs text-gray-500 mt-1">Como admin, diriges la partida pero no juegas</p>
         )}
       </div>
+
+      {/* Banner reconexión */}
+      {!checkingGame && activeGame && !mode && (
+        <div className="w-full max-w-sm rounded-2xl p-4 mb-2 space-y-3"
+          style={{ background: 'rgba(255,87,20,0.1)', border: '2px solid #FF5714' }}>
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wide" style={{ color: '#FF5714' }}>
+              🎮 Tienes una partida en curso
+            </p>
+            {activeGame.category && (
+              <p className="text-sm mt-0.5" style={{ color: 'var(--c-text2)' }}>
+                Categoría: <span className="font-semibold" style={{ color: 'var(--c-text)' }}>{activeGame.category}</span>
+              </p>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => navigate(`/game/${activeGame.gameId}`)}
+              className="flex-1 text-white font-display font-semibold py-2.5 rounded-xl transition-all hover:scale-105 active:scale-95"
+              style={{ background: '#FF5714' }}
+            >
+              ▶ Volver a mi partida
+            </button>
+            <button
+              onClick={() => { reset(); setActiveGame(null) }}
+              className="px-3 py-2.5 rounded-xl font-bold text-sm"
+              style={{ background: 'var(--c-surface2)', color: 'var(--c-text3)' }}
+              title="Abandonar partida"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
 
       {!mode && (
         <div className="flex flex-col sm:flex-row gap-4 w-full max-w-sm">

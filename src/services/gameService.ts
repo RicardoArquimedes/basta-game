@@ -342,6 +342,23 @@ export async function updateExcludedLetters(gameId: string, excluded: string[]) 
 
 // ── Suscripciones ─────────────────────────────────────────────────────────────
 
+// Busca si el jugador sigue en una partida activa (para reconexión tras recarga)
+export async function getActiveGameForPlayer(uid: string): Promise<{ gameId: string; game: Game } | null> {
+  // Buscar partidas no terminadas donde el jugador sea participante
+  const statuses: string[] = ['lobby', 'category_reveal', 'player_turn', 'turn_paused', 'rotation_end', 'category_done']
+  for (const status of statuses) {
+    const q = query(collection(db, 'games'), where('status', '==', status))
+    const snap = await getDocs(q)
+    for (const d of snap.docs) {
+      const playerSnap = await getDoc(doc(db, 'games', d.id, 'players', uid))
+      if (playerSnap.exists()) {
+        return { gameId: d.id, game: { id: d.id, ...d.data() } as Game }
+      }
+    }
+  }
+  return null
+}
+
 export function subscribeGame(gameId: string, cb: (g: Game) => void) {
   return onSnapshot(doc(db, 'games', gameId), snap => {
     if (snap.exists()) cb({ id: snap.id, ...snap.data() } as Game)
