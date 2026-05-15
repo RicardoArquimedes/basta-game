@@ -158,13 +158,25 @@ export async function submitAnswer(
 
   // ¿Terminó la rotación?
   if (nextIndex >= order.length) {
-    await updateDoc(doc(db, 'games', gameId), {
-      status: 'rotation_end',
-      currentLetter: null,
-      letterTimerStartAt: null,
-      answerTimerStartAt: null,
-      pauseNextTurn: false,
-    })
+    // Si no quedan letras → terminar categoría automáticamente (con scoring)
+    if (game.availableLetters.length === 0) {
+      await scoreRotation(gameId, rotationNumber, activePlayers)
+      await updateDoc(doc(db, 'games', gameId), {
+        status: 'category_done',
+        currentLetter: null,
+        letterTimerStartAt: null,
+        answerTimerStartAt: null,
+        pauseNextTurn: false,
+      })
+    } else {
+      await updateDoc(doc(db, 'games', gameId), {
+        status: 'rotation_end',
+        currentLetter: null,
+        letterTimerStartAt: null,
+        answerTimerStartAt: null,
+        pauseNextTurn: false,
+      })
+    }
     return
   }
 
