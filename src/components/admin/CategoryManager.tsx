@@ -31,8 +31,12 @@ export default function CategoryManager({ categories, adminUid, onRefresh }: Pro
     e.preventDefault()
     if (!newName.trim()) return
     setSaving(true)
-    const maxOrder = categories.reduce((m, c, i) => Math.max(m, c.order ?? i), -1)
-    await addCategory(newName.trim(), adminUid, maxOrder + 1)
+    // Crear primero, luego reordenar: nueva categoría queda en la posición 0
+    const newCat = await addCategory(newName.trim(), adminUid, 0)
+    await reorderCategories([
+      { id: newCat.id, order: 0 },
+      ...categories.map((c, i) => ({ id: c.id, order: i + 1 })),
+    ])
     setNewName('')
     onRefresh()
     setSaving(false)
