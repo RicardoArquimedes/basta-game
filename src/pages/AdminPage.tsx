@@ -3,8 +3,10 @@ import { useAuthStore } from '../store/authStore'
 import { useNavigate } from 'react-router-dom'
 import { getCategories, seedCategories } from '../services/categoryService'
 import { getActiveGames } from '../services/gameService'
+import { getAllGameHistories } from '../services/gameHistoryService'
 import CategoryManager from '../components/admin/CategoryManager'
-import type { Category, Game } from '../types'
+import GameHistoryManager from '../components/admin/GameHistoryManager'
+import type { Category, Game, GameHistory } from '../types'
 
 const STATUS_LABEL: Record<string, string> = {
   lobby: '🟡 Lobby',
@@ -20,13 +22,16 @@ export default function AdminPage() {
   const navigate = useNavigate()
   const [categories, setCategories] = useState<Category[]>([])
   const [activeGames, setActiveGames] = useState<Game[]>([])
+  const [histories, setHistories] = useState<GameHistory[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingGames, setLoadingGames] = useState(true)
+  const [loadingHistory, setLoadingHistory] = useState(true)
 
   useEffect(() => {
     if (!profile) { navigate('/auth'); return }
     load()
     loadGames()
+    loadHistory()
   }, [profile])
 
   async function load() {
@@ -42,6 +47,13 @@ export default function AdminPage() {
     const games = await getActiveGames()
     setActiveGames(games)
     setLoadingGames(false)
+  }
+
+  async function loadHistory() {
+    setLoadingHistory(true)
+    const hs = await getAllGameHistories()
+    setHistories(hs)
+    setLoadingHistory(false)
   }
 
   if (!profile) return null
@@ -127,6 +139,28 @@ export default function AdminPage() {
           </div>
         ) : (
           <CategoryManager categories={categories} adminUid={profile.uid} onRefresh={load} />
+        )}
+      </div>
+
+      {/* Histórico de partidas */}
+      <div className="rounded-2xl shadow p-4 space-y-3" style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
+        <div className="flex items-center justify-between">
+          <h2 className="font-display font-semibold" style={{ color: '#FF5714' }}>📋 Histórico de partidas</h2>
+          <button
+            onClick={loadHistory}
+            className="text-xs px-3 py-1.5 rounded-lg font-bold transition-colors"
+            style={{ background: 'var(--c-surface2)', color: 'var(--c-text2)' }}
+          >
+            ↺ Actualizar
+          </button>
+        </div>
+        {loadingHistory ? (
+          <div className="flex justify-center py-4">
+            <div className="animate-spin h-6 w-6 border-4 border-t-transparent rounded-full"
+              style={{ borderColor: '#FF5714', borderTopColor: 'transparent' }} />
+          </div>
+        ) : (
+          <GameHistoryManager histories={histories} onRefresh={loadHistory} />
         )}
       </div>
 
