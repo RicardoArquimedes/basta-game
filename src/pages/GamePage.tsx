@@ -612,15 +612,13 @@ export default function GamePage() {
               style={{ background: '#FF5714' }}>
               ▶ ¡Empezar!
             </button>
-            {game.prevCategoryId && (
-              <button
-                onClick={() => undoNewCategory(gameId!, game)}
-                className="text-sm font-bold py-2 px-6 rounded-xl transition-colors"
-                style={{ background: 'var(--c-surface2)', color: 'var(--c-text2)' }}
-              >
-                ↩ Cancelar — volver a categoría anterior
-              </button>
-            )}
+            <button
+              onClick={() => undoNewCategory(gameId!, game)}
+              className="text-sm font-bold py-2 px-6 rounded-xl transition-colors"
+              style={{ background: 'var(--c-surface2)', color: 'var(--c-text2)' }}
+            >
+              ↩ {game.prevCategoryId ? 'Volver a categoría anterior' : 'Volver al lobby'}
+            </button>
           </div>
         )}
         {!isAdmin && <p className="text-sm animate-pulse" style={{ color: 'var(--c-text3)' }}>El admin iniciará el juego...</p>}

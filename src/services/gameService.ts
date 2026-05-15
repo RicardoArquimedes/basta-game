@@ -337,14 +337,24 @@ export async function startNewCategory(
 }
 
 export async function undoNewCategory(gameId: string, game: Game) {
-  await updateDoc(doc(db, 'games', gameId), {
-    status: 'category_done',
-    currentCategory: game.prevCategory ?? game.currentCategory,
-    currentCategoryId: game.prevCategoryId ?? game.currentCategoryId,
-    categoryNumber: Math.max(1, game.categoryNumber - 1),
-    prevCategory: '',
-    prevCategoryId: '',
-  })
+  if (game.prevCategoryId) {
+    // Categoría 2+ → volver a category_done con la categoría anterior
+    await updateDoc(doc(db, 'games', gameId), {
+      status: 'category_done',
+      currentCategory: game.prevCategory ?? '',
+      currentCategoryId: game.prevCategoryId,
+      categoryNumber: Math.max(1, game.categoryNumber - 1),
+      prevCategory: '',
+      prevCategoryId: '',
+    })
+  } else {
+    // Primera categoría → volver al lobby
+    await updateDoc(doc(db, 'games', gameId), {
+      status: 'lobby',
+      currentCategory: '',
+      currentCategoryId: '',
+    })
+  }
 }
 
 // Partidas activas para el dashboard del admin
