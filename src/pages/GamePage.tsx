@@ -120,6 +120,8 @@ export default function GamePage() {
   const [showCatReview, setShowCatReview] = useState(false)
   const [newCatExcluded, setNewCatExcluded] = useState<string[] | null>(null)  // null = usar las del juego
   const [showLetterPicker, setShowLetterPicker] = useState(false)
+  const [showRandomPicker, setShowRandomPicker] = useState(false)
+  const [randomPoolIds, setRandomPoolIds] = useState<string[]>([])
   const inputRef = useRef<HTMLInputElement>(null)
 
   // Track which turn we've already handled to avoid double-submit
@@ -300,11 +302,19 @@ export default function GamePage() {
     setShowCatPicker(false)
   }
 
-  function handleRandomCategory() {
-    const pool = categories.filter(c => c.isActive && !c.excludeFromRandom)
+  function handleOpenRandomPicker() {
+    // Pre-marcar las categorías activas no excluidas del sorteo
+    const defaultIds = categories.filter(c => !c.excludeFromRandom).map(c => c.id)
+    setRandomPoolIds(defaultIds)
+    setShowRandomPicker(true)
+  }
+
+  function handlePickRandom() {
+    const pool = categories.filter(c => randomPoolIds.includes(c.id))
     if (pool.length === 0) return
     const random = pool[Math.floor(Math.random() * pool.length)]
     setSelectedCatId(random.id)
+    setShowRandomPicker(false)
   }
 
   async function handleAddCategoryInline() {
@@ -549,12 +559,109 @@ export default function GamePage() {
     )
   }
 
+  // ── Modal: selector de categorías para sorteo aleatorio ─────────────────────
+  const randomPickerModal = showRandomPicker ? (
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      onClick={() => setShowRandomPicker(false)}
+    >
+      <div
+        className="rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
+        style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="px-5 pt-5 pb-3">
+          <h3 className="font-display font-semibold text-lg" style={{ color: '#FF5714' }}>
+            🎲 Sorteo aleatorio
+          </h3>
+          <p className="text-xs mt-0.5" style={{ color: 'var(--c-text3)' }}>
+            Marca las categorías que entran al sorteo
+          </p>
+        </div>
+
+        {/* Quick actions */}
+        <div className="flex gap-2 px-5 pb-2">
+          <button
+            onClick={() => setRandomPoolIds(categories.map(c => c.id))}
+            className="text-xs font-bold px-3 py-1 rounded-lg transition-colors"
+            style={{ background: 'var(--c-surface2)', color: 'var(--c-text2)' }}
+          >
+            Todas
+          </button>
+          <button
+            onClick={() => setRandomPoolIds([])}
+            className="text-xs font-bold px-3 py-1 rounded-lg transition-colors"
+            style={{ background: 'var(--c-surface2)', color: 'var(--c-text2)' }}
+          >
+            Ninguna
+          </button>
+          <span className="ml-auto text-xs self-center" style={{ color: 'var(--c-text3)' }}>
+            {randomPoolIds.length} seleccionadas
+          </span>
+        </div>
+
+        {/* Lista de categorías */}
+        <div className="max-h-64 overflow-y-auto px-5 pb-3 space-y-1">
+          {categories.map(cat => {
+            const checked = randomPoolIds.includes(cat.id)
+            return (
+              <label
+                key={cat.id}
+                className="flex items-center gap-3 rounded-xl px-3 py-2.5 cursor-pointer transition-colors"
+                style={checked
+                  ? { background: 'rgba(255,87,20,0.08)', border: '1px solid rgba(255,87,20,0.3)' }
+                  : { background: 'var(--c-surface2)', border: '1px solid transparent' }}
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() =>
+                    setRandomPoolIds(prev =>
+                      checked ? prev.filter(id => id !== cat.id) : [...prev, cat.id]
+                    )
+                  }
+                  className="w-4 h-4 accent-orange-500"
+                />
+                <span className="flex-1 text-sm font-medium" style={{ color: 'var(--c-text)' }}>
+                  {cat.name}
+                  {cat.isCustom && <span className="ml-1 text-xs" style={{ color: '#FF5714' }}>✦</span>}
+                </span>
+              </label>
+            )
+          })}
+        </div>
+
+        {/* Footer */}
+        <div className="flex gap-2 px-5 pb-5">
+          <button
+            onClick={() => setShowRandomPicker(false)}
+            className="flex-1 py-2.5 rounded-xl font-bold text-sm transition-colors"
+            style={{ background: 'var(--c-surface2)', color: 'var(--c-text2)' }}
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handlePickRandom}
+            disabled={randomPoolIds.length === 0}
+            className="flex-1 py-2.5 rounded-xl font-bold text-sm text-white disabled:opacity-40 transition-colors"
+            style={{ background: '#FF5714' }}
+          >
+            🎲 Elegir al azar
+          </button>
+        </div>
+      </div>
+    </div>
+  ) : null
+
   // ════════════════════════════════════════════════════════════════════════════
   // LOBBY
   // ════════════════════════════════════════════════════════════════════════════
   if (game.status === 'lobby') {
     const realPlayers = players.filter(p => p.uid !== game.adminId)
     return (
+      <>
+      {randomPickerModal}
       <div className="max-w-lg mx-auto p-4 space-y-4">
         {/* Código */}
         <div className="rounded-2xl p-5 text-center" style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
@@ -603,7 +710,7 @@ export default function GamePage() {
                   ))}
                 </select>
                 <button
-                  onClick={handleRandomCategory}
+                  onClick={handleOpenRandomPicker}
                   title="Elegir categoría aleatoria"
                   className="w-11 h-11 rounded-xl text-xl flex items-center justify-center transition-all hover:scale-110 active:scale-95"
                   style={{ background: 'rgba(110,235,131,0.15)', border: '1px solid rgba(110,235,131,0.4)', color: '#6EEB83' }}
@@ -720,6 +827,7 @@ export default function GamePage() {
 
         {!isAdmin && <p className="text-center text-gray-400 text-sm animate-pulse font-body">Esperando al admin para iniciar...</p>}
       </div>
+      </>
     )
   }
 
@@ -1220,6 +1328,8 @@ export default function GamePage() {
     const hasCatData = catAnswers.length > 0
 
     return (
+      <>
+      {randomPickerModal}
       <div className="max-w-lg mx-auto p-4 space-y-4">
         {scoreTableModal}{scoreFabEl}
         <div className="rounded-2xl p-5 text-center text-white" style={{ background: 'linear-gradient(135deg, #FF5714, #333)' }}>
@@ -1393,7 +1503,7 @@ export default function GamePage() {
                   {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
                 <button
-                  onClick={handleRandomCategory}
+                  onClick={handleOpenRandomPicker}
                   title="Elegir categoría aleatoria"
                   className="w-11 h-11 rounded-xl text-xl flex items-center justify-center transition-all hover:scale-110 active:scale-95"
                   style={{ background: 'rgba(110,235,131,0.15)', border: '1px solid rgba(110,235,131,0.4)', color: '#6EEB83' }}
@@ -1500,6 +1610,7 @@ export default function GamePage() {
           </p>
         )}
       </div>
+      </>
     )
   }
 
