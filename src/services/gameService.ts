@@ -291,6 +291,35 @@ export async function addBonusPoints(gameId: string, uid: string, pts: number) {
   await updateDoc(doc(db, 'games', gameId, 'players', uid), { score: increment(pts) })
 }
 
+export async function adjustAnswerValidity(
+  gameId: string,
+  answerId: string,
+  answer: GameAnswer,
+  makeValid: boolean,
+  allCategoryAnswers: GameAnswer[],
+) {
+  const batch = writeBatch(db)
+  if (makeValid) {
+    // Contar respuestas iguales en la misma rotación para determinar unicidad
+    const sameCount = allCategoryAnswers.filter(
+      a => a.rotationNumber === answer.rotationNumber
+        && !a.noAnswer
+        && a.answer.toLowerCase().trim() === answer.answer.toLowerCase().trim()
+        && a.isValid !== false,
+    ).length
+    const pts = sameCount <= 1 ? 10 : 5
+    batch.update(doc(db, 'games', gameId, 'answers', answerId), { isValid: true, points: pts })
+    batch.update(doc(db, 'games', gameId, 'players', answer.uid), { score: increment(pts) })
+  } else {
+    const pts = answer.points ?? 0
+    batch.update(doc(db, 'games', gameId, 'answers', answerId), { isValid: false, points: 0 })
+    if (pts > 0) {
+      batch.update(doc(db, 'games', gameId, 'players', answer.uid), { score: increment(-pts) })
+    }
+  }
+  await batch.commit()
+}
+
 export async function endCategory(gameId: string, game: Game, players: Player[]) {
   await scoreRotation(gameId, game.rotationNumber, players.filter(p => p.status === 'active'))
   await updateDoc(doc(db, 'games', gameId), { status: 'category_done' })

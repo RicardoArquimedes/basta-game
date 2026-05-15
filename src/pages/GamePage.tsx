@@ -8,6 +8,7 @@ import {
   continueNextRotation, validateAnswer, eliminatePlayer,
   endGame, endCategory, startNewCategory, undoNewCategory, undoEndCategory, undoEndGame,
   updateExcludedLetters, setPauseNextTurn, resumeFromPause, updateTimers, addBonusPoints,
+  adjustAnswerValidity,
 } from '../services/gameService'
 import { getCategories, addCategory } from '../services/categoryService'
 import { recordGameStats } from '../services/authService'
@@ -115,12 +116,14 @@ export default function GamePage() {
   const [addingCat, setAddingCat] = useState(false)
   const [bonusInputs, setBonusInputs] = useState<Record<string, number>>({})
   const [showScoreTable, setShowScoreTable] = useState(false)
+  const [showCatReview, setShowCatReview] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   // Track which turn we've already handled to avoid double-submit
   const handledTurnKey = useRef('')
   const cheatHandledRef = useRef(false)
   const prevPlayerStatusesRef = useRef<Record<string, string>>({})
+  const bonusInitializedRef = useRef('')   // categoryId para el que ya se pre-seleccionó bonus
 
   const isAdmin = game?.adminId === profile?.uid
   const myPlayer = players.find(p => p.uid === profile?.uid)
@@ -174,6 +177,24 @@ export default function GamePage() {
       cheatHandledRef.current = false
     }
   }, [game?.currentCategoryId])
+
+  // Auto-inicializar bonus de 10 pts para el ganador de la categoría al entrar a category_done
+  useEffect(() => {
+    if (game?.status !== 'category_done' || !isAdmin) return
+    const catId = game.currentCategoryId
+    if (bonusInitializedRef.current === catId) return   // ya inicializado para esta categoría
+    bonusInitializedRef.current = catId
+    const catAns = allAnswers.filter(a => a.categoryId === catId)
+    if (catAns.length === 0) return
+    const scores = players.map(p => ({
+      uid: p.uid,
+      pts: catAns.filter(a => a.uid === p.uid).reduce((s, a) => s + (a.points ?? 0), 0),
+    })).sort((a, b) => b.pts - a.pts)
+    const winner = scores[0]
+    if (winner && winner.pts > 0) {
+      setBonusInputs(prev => ({ ...prev, [winner.uid]: 10 }))
+    }
+  }, [game?.status, game?.currentCategoryId, allAnswers.length, isAdmin, players])
 
   // Detectar trampa de otros jugadores y mostrar toast a los demás
   useEffect(() => {
@@ -1109,18 +1130,18 @@ export default function GamePage() {
               {isAdmin && (
                 <div className="flex items-center gap-1 shrink-0">
                   <button
-                    onClick={() => setBonusInputs(prev => ({ ...prev, [p.uid]: Math.max(1, (prev[p.uid] ?? 20) - 5) }))}
+                    onClick={() => setBonusInputs(prev => ({ ...prev, [p.uid]: Math.max(1, (prev[p.uid] ?? 10) - 5) }))}
                     className="w-6 h-6 rounded-md text-xs font-bold"
                     style={{ background: 'var(--c-surface2)', color: 'var(--c-text2)' }}>−</button>
                   <span className="w-8 text-center text-sm font-bold tabular-nums" style={{ color: '#E8AA14' }}>
-                    {bonusInputs[p.uid] ?? 20}
+                    {bonusInputs[p.uid] ?? 10}
                   </span>
                   <button
-                    onClick={() => setBonusInputs(prev => ({ ...prev, [p.uid]: (prev[p.uid] ?? 20) + 5 }))}
+                    onClick={() => setBonusInputs(prev => ({ ...prev, [p.uid]: (prev[p.uid] ?? 10) + 5 }))}
                     className="w-6 h-6 rounded-md text-xs font-bold"
                     style={{ background: 'var(--c-surface2)', color: 'var(--c-text2)' }}>+</button>
                   <button
-                    onClick={() => addBonusPoints(gameId!, p.uid, bonusInputs[p.uid] ?? 20)}
+                    onClick={() => addBonusPoints(gameId!, p.uid, bonusInputs[p.uid] ?? 10)}
                     className="ml-1 text-xs px-2 py-1 rounded-lg font-bold transition-all hover:scale-110 active:scale-95"
                     style={{ background: 'rgba(232,170,20,0.2)', color: '#E8AA14', border: '1px solid rgba(232,170,20,0.5)' }}
                   >
@@ -1131,6 +1152,95 @@ export default function GamePage() {
             </div>
           ))}
         </div>
+
+        {/* Admin: revisar y ajustar respuestas de la categoría */}
+        {isAdmin && catAnswers.length > 0 && (
+          <div className="rounded-2xl shadow p-4 space-y-3" style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
+            <button
+              onClick={() => setShowCatReview(v => !v)}
+              className="w-full flex items-center justify-between"
+            >
+              <p className="text-xs font-bold uppercase tracking-wide" style={{ color: 'var(--c-text3)' }}>
+                🔍 Ajustar respuestas de la categoría
+              </p>
+              <span className="text-xs" style={{ color: 'var(--c-text3)' }}>{showCatReview ? '▲ ocultar' : '▼ ver'}</span>
+            </button>
+
+            {showCatReview && (
+              <div className="space-y-4">
+                {Array.from(new Set(catAnswers.map(a => a.rotationNumber))).sort((a, b) => a - b).map(rot => (
+                  <div key={rot}>
+                    <p className="text-xs font-semibold mb-1.5 uppercase" style={{ color: 'var(--c-text3)' }}>
+                      Rotación {rot}
+                    </p>
+                    <div className="space-y-1.5">
+                      {catAnswers.filter(a => a.rotationNumber === rot).map((ans) => {
+                        const ansIdx = allAnswers.findIndex(
+                          a => a.uid === ans.uid && a.rotationNumber === ans.rotationNumber && a.categoryId === ans.categoryId,
+                        )
+                        const ansId = ansIdx >= 0 ? answerIds[ansIdx] : null
+                        return (
+                          <div key={`${ans.uid}-${rot}`}
+                            className="flex items-center gap-2 rounded-xl px-3 py-2 border"
+                            style={
+                              ans.noAnswer
+                                ? { background: 'rgba(239,68,68,0.06)', borderColor: 'rgba(239,68,68,0.2)' }
+                                : ans.isValid === false
+                                  ? { background: 'rgba(249,115,22,0.06)', borderColor: 'rgba(249,115,22,0.2)' }
+                                  : { background: 'rgba(34,197,94,0.06)', borderColor: 'rgba(34,197,94,0.2)' }
+                            }>
+                            {/* Letra */}
+                            <span className="w-7 h-7 rounded-lg flex items-center justify-center font-black text-sm shrink-0"
+                              style={{ background: ans.noAnswer ? 'rgba(239,68,68,0.15)' : 'rgba(255,87,20,0.12)', color: ans.noAnswer ? '#ef4444' : '#FF5714' }}>
+                              {ans.noAnswer ? '—' : ans.letter}
+                            </span>
+                            {/* Jugador + respuesta */}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs truncate" style={{ color: 'var(--c-text3)' }}>{ans.playerName}</p>
+                              <p className="font-bold text-sm truncate" style={{ color: 'var(--c-text)' }}>
+                                {ans.noAnswer ? <em style={{ color: 'var(--c-text3)' }}>Sin respuesta</em> : ans.answer}
+                              </p>
+                            </div>
+                            {/* Puntos asignados */}
+                            {!ans.noAnswer && (
+                              <span className="text-xs font-black shrink-0 tabular-nums"
+                                style={{ color: ans.isValid === false ? 'var(--c-text3)' : '#FF5714' }}>
+                                {ans.isValid === false ? '0pts' : `+${ans.points ?? 0}pts`}
+                              </span>
+                            )}
+                            {/* Botones validar / invalidar */}
+                            {!ans.noAnswer && ansId && (
+                              <div className="flex gap-1 shrink-0">
+                                <button
+                                  onClick={() => adjustAnswerValidity(gameId!, ansId, ans, true, catAnswers)}
+                                  disabled={ans.isValid === true}
+                                  className="w-7 h-7 rounded-lg text-sm font-bold transition-colors disabled:opacity-30"
+                                  style={ans.isValid === true
+                                    ? { background: '#22c55e', color: 'white' }
+                                    : { background: 'var(--c-surface2)', color: 'var(--c-text2)' }}>
+                                  ✓
+                                </button>
+                                <button
+                                  onClick={() => adjustAnswerValidity(gameId!, ansId, ans, false, catAnswers)}
+                                  disabled={ans.isValid === false}
+                                  className="w-7 h-7 rounded-lg text-sm font-bold transition-colors disabled:opacity-30"
+                                  style={ans.isValid === false
+                                    ? { background: '#ef4444', color: 'white' }
+                                    : { background: 'var(--c-surface2)', color: 'var(--c-text2)' }}>
+                                  ✗
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Admin: nueva categoría */}
         {isAdmin && (
