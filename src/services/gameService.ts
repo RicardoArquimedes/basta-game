@@ -423,6 +423,9 @@ export async function undoEndGame(gameId: string) {
 export async function endGame(gameId: string, game: Game, players: Player[]) {
   await scoreRotation(gameId, game.rotationNumber, players.filter(p => p.status === 'active'))
   await updateDoc(doc(db, 'games', gameId), { status: 'game_over' })
+  // Guardar historial (asíncrono, no bloquea la UI si falla)
+  const { saveGameHistory } = await import('./gameHistoryService')
+  saveGameHistory(gameId, game).catch(err => console.error('Error guardando historial:', err))
 }
 
 export async function updateExcludedLetters(gameId: string, excluded: string[]) {

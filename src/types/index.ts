@@ -53,6 +53,34 @@ export interface GameAnswer {
   secondsUsed?: number  // segundos que tardó en responder (0 = instantáneo, answerSeconds = agotó el tiempo)
 }
 
+// ── Histórico de partidas ─────────────────────────────────────────────────────
+
+export interface GameHistoryPlayer {
+  uid: string
+  displayName: string
+  finalScore: number
+  cheatCount: number
+  categoryScores: Record<string, number>   // categoryId → pts ganados en esa categoría
+}
+
+export interface GameHistoryCategory {
+  id: string
+  name: string
+  number: number   // 1, 2, 3…
+}
+
+export interface GameHistory {
+  id: string
+  gameId: string
+  code: string
+  adminId: string
+  adminName: string
+  endedAt: number
+  totalCategories: number
+  categories: GameHistoryCategory[]
+  players: GameHistoryPlayer[]
+}
+
 export interface Game {
   id: string
   code: string
