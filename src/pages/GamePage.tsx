@@ -1021,18 +1021,18 @@ export default function GamePage() {
               {isAdmin && (
                 <div className="flex items-center gap-1 shrink-0">
                   <button
-                    onClick={() => setBonusInputs(prev => ({ ...prev, [p.uid]: Math.max(1, (prev[p.uid] ?? 15) - 5) }))}
+                    onClick={() => setBonusInputs(prev => ({ ...prev, [p.uid]: Math.max(1, (prev[p.uid] ?? 20) - 5) }))}
                     className="w-6 h-6 rounded-md text-xs font-bold"
                     style={{ background: 'var(--c-surface2)', color: 'var(--c-text2)' }}>−</button>
                   <span className="w-8 text-center text-sm font-bold tabular-nums" style={{ color: '#E8AA14' }}>
-                    {bonusInputs[p.uid] ?? 15}
+                    {bonusInputs[p.uid] ?? 20}
                   </span>
                   <button
-                    onClick={() => setBonusInputs(prev => ({ ...prev, [p.uid]: (prev[p.uid] ?? 15) + 5 }))}
+                    onClick={() => setBonusInputs(prev => ({ ...prev, [p.uid]: (prev[p.uid] ?? 20) + 5 }))}
                     className="w-6 h-6 rounded-md text-xs font-bold"
                     style={{ background: 'var(--c-surface2)', color: 'var(--c-text2)' }}>+</button>
                   <button
-                    onClick={() => addBonusPoints(gameId!, p.uid, bonusInputs[p.uid] ?? 15)}
+                    onClick={() => addBonusPoints(gameId!, p.uid, bonusInputs[p.uid] ?? 20)}
                     className="ml-1 text-xs px-2 py-1 rounded-lg font-bold transition-all hover:scale-110 active:scale-95"
                     style={{ background: 'rgba(232,170,20,0.2)', color: '#E8AA14', border: '1px solid rgba(232,170,20,0.5)' }}
                   >
