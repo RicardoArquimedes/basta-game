@@ -7,7 +7,7 @@ import {
   startGame, beginTurns, playerSelectLetter, submitAnswer,
   continueNextRotation, validateAnswer, eliminatePlayer,
   endGame, endCategory, startNewCategory, undoEndCategory, undoEndGame,
-  updateExcludedLetters, setPauseNextTurn, resumeFromPause, updateTimers,
+  updateExcludedLetters, setPauseNextTurn, resumeFromPause, updateTimers, addBonusPoints,
 } from '../services/gameService'
 import { getCategories, addCategory } from '../services/categoryService'
 import { recordGameStats } from '../services/authService'
@@ -26,6 +26,9 @@ function CountdownTimer({
 }) {
   const [remaining, setRemaining] = useState(seconds)
   const firedRef = useRef(false)
+  // Siempre apunta al callback más reciente, evita closures obsoletas
+  const onExpireRef = useRef(onExpire)
+  useEffect(() => { onExpireRef.current = onExpire }, [onExpire])
 
   useEffect(() => {
     firedRef.current = false
@@ -37,7 +40,7 @@ function CountdownTimer({
       if (left === 0 && !firedRef.current) {
         firedRef.current = true
         clearInterval(iv)
-        onExpire?.()
+        onExpireRef.current?.()
       }
     }, 200)
     return () => clearInterval(iv)
@@ -976,7 +979,10 @@ export default function GamePage() {
 
         {/* Marcador acumulado */}
         <div className="rounded-2xl shadow p-4 space-y-1.5" style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
-          <p className="text-xs font-bold uppercase mb-2" style={{ color: 'var(--c-text3)' }}>Marcador acumulado</p>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-bold uppercase" style={{ color: 'var(--c-text3)' }}>Marcador acumulado</p>
+            {isAdmin && <p className="text-xs" style={{ color: 'var(--c-text3)' }}>🎁 = +15 pts bonus</p>}
+          </div>
           {sortedPlayers.map((p, i) => (
             <div key={p.uid} className="flex items-center gap-2 rounded-xl px-3 py-2"
               style={i === 0
@@ -985,6 +991,16 @@ export default function GamePage() {
               <span className="text-base">{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}</span>
               <span className="flex-1 font-bold truncate" style={{ color: 'var(--c-text)' }}>{p.displayName}</span>
               <span className="font-black tabular-nums" style={{ color: '#FF5714' }}>{p.score}pts</span>
+              {isAdmin && (
+                <button
+                  onClick={() => addBonusPoints(gameId!, p.uid, 15)}
+                  title={`+15 pts bonus a ${p.displayName}`}
+                  className="text-sm px-2 py-1 rounded-lg font-bold transition-all hover:scale-110 active:scale-95"
+                  style={{ background: 'rgba(232,170,20,0.15)', color: '#E8AA14', border: '1px solid rgba(232,170,20,0.4)' }}
+                >
+                  🎁+15
+                </button>
+              )}
             </div>
           ))}
         </div>

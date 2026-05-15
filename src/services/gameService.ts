@@ -1,6 +1,7 @@
 import {
   collection, doc, addDoc, setDoc, updateDoc, deleteDoc,
   getDoc, getDocs, onSnapshot, query, orderBy, where, writeBatch,
+  increment, arrayUnion,
 } from 'firebase/firestore'
 import { db } from '../firebase'
 import type { Game, Player, GameAnswer } from '../types'
@@ -117,7 +118,7 @@ export async function playerSelectLetter(gameId: string, letter: string, availab
     currentLetter: letter,
     answerTimerStartAt: Date.now(),
     availableLetters: newAvailable,
-    usedLetters: /* append */ (await getDoc(doc(db, 'games', gameId))).data()?.usedLetters.concat(letter) ?? [letter],
+    usedLetters: arrayUnion(letter),   // atómico, sin leer el doc
   })
 }
 
@@ -167,8 +168,7 @@ export async function submitAnswer(
   }
 
   // ¿El admin pidió pausar antes del siguiente turno?
-  const gameSnap = await getDoc(doc(db, 'games', gameId))
-  const shouldPause = gameSnap.data()?.pauseNextTurn === true
+  const shouldPause = game.pauseNextTurn === true
 
   if (shouldPause) {
     await updateDoc(doc(db, 'games', gameId), {
@@ -239,12 +239,10 @@ async function scoreRotation(gameId: string, rotationNumber: number, activePlaye
     const pts = isUnique ? 10 : 5
     const ansKey = `${ans.uid}_r${rotationNumber}`
     batch.update(doc(db, 'games', gameId, 'answers', ansKey), { points: pts })
-    const player = activePlayers.find(p => p.uid === ans.uid)
-    if (player) {
-      batch.update(doc(db, 'games', gameId, 'players', ans.uid), {
-        score: player.score + pts,
-      })
-    }
+    // increment() es atómico: evita sobreescribir con datos locales desactualizados
+    batch.update(doc(db, 'games', gameId, 'players', ans.uid), {
+      score: increment(pts),
+    })
   }
   await batch.commit()
 }
@@ -274,6 +272,10 @@ export async function validateAnswer(gameId: string, answerId: string, isValid: 
 
 export async function eliminatePlayer(gameId: string, uid: string) {
   await updateDoc(doc(db, 'games', gameId, 'players', uid), { status: 'eliminated' })
+}
+
+export async function addBonusPoints(gameId: string, uid: string, pts: number) {
+  await updateDoc(doc(db, 'games', gameId, 'players', uid), { score: increment(pts) })
 }
 
 export async function endCategory(gameId: string, game: Game, players: Player[]) {
