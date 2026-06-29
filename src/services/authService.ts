@@ -10,7 +10,6 @@ import {
 } from 'firebase/auth'
 import { doc, setDoc, getDoc, updateDoc, increment } from 'firebase/firestore'
 import { auth, db } from '../firebase'
-import { ADMIN_EMAIL } from '../constants'
 import type { UserProfile } from '../types'
 
 export async function register(email: string, password: string, displayName: string) {
@@ -19,7 +18,7 @@ export async function register(email: string, password: string, displayName: str
   await setDoc(doc(db, 'users', user.uid), {
     displayName,
     email,
-    isAdmin: email === ADMIN_EMAIL,
+    isAdmin: true,   // cualquier usuario registrado es admin
     isGuest: false,
     gamesPlayed: 0,
     totalScore: 0,
@@ -58,7 +57,7 @@ export async function linkGuestAccount(email: string, password: string, displayN
     displayName,
     email,
     isGuest: false,
-    isAdmin: email === ADMIN_EMAIL,
+    isAdmin: true,   // convertir invitado a registrado = admin
   })
   return linked
 }
@@ -81,8 +80,8 @@ export async function getOrCreateProfile(user: {
 }): Promise<UserProfile> {
   const existing = await getUserProfile(user.uid)
   if (existing) {
-    // Siempre sincroniza isAdmin usando el email de Firebase Auth (fuente de verdad)
-    const shouldBeAdmin = user.email === ADMIN_EMAIL
+    // Sincroniza isAdmin: cualquier usuario no-invitado es admin
+    const shouldBeAdmin = !user.isAnonymous
     if (shouldBeAdmin !== existing.isAdmin) {
       await updateDoc(doc(db, 'users', user.uid), { isAdmin: shouldBeAdmin })
       return { ...existing, isAdmin: shouldBeAdmin }
@@ -93,7 +92,7 @@ export async function getOrCreateProfile(user: {
   const profile = {
     displayName,
     email: user.email ?? '',
-    isAdmin: user.email === ADMIN_EMAIL,
+    isAdmin: !user.isAnonymous,
     isGuest: user.isAnonymous,
     gamesPlayed: 0,
     totalScore: 0,
