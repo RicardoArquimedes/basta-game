@@ -12,6 +12,7 @@ import AuthPage from './pages/AuthPage'
 import GamePage from './pages/GamePage'
 import AdminPage from './pages/AdminPage'
 import ProfilePage from './pages/ProfilePage'
+import FAQPage from './pages/FAQPage'
 
 function FullScreenLoader() {
   return (
@@ -127,6 +128,7 @@ export default function App() {
           <Route path="/game/:gameId" element={<RequireAuth><GamePage /></RequireAuth>} />
           <Route path="/admin" element={<RequireAuth><AdminPage /></RequireAuth>} />
           <Route path="/profile" element={<RequireAuth><ProfilePage /></RequireAuth>} />
+          <Route path="/faq" element={<FAQPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>

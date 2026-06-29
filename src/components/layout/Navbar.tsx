@@ -152,6 +152,16 @@ export default function Navbar() {
             </button>
           )}
 
+          {/* FAQ */}
+          <button
+            onClick={() => navigate('/faq')}
+            title="¿Cómo se juega?"
+            className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors text-sm font-bold"
+            style={{ background: 'var(--c-surface2)', color: 'var(--c-text2)' }}
+          >
+            ?
+          </button>
+
           {/* Theme toggle */}
           <button
             onClick={toggle}
