@@ -8,7 +8,7 @@ import {
   continueNextRotation, validateAnswer, eliminatePlayer,
   endGame, endCategory, startNewCategory, undoNewCategory, undoEndCategory, undoEndGame,
   updateExcludedLetters, setPauseNextTurn, resumeFromPause, updateTimers, addBonusPoints,
-  adjustAnswerValidity, recordCheat, validateAnswerWithPoints,
+  adjustAnswerValidity, validateAnswerWithPoints,
 } from '../services/gameService'
 import { getCategories, addCategory } from '../services/categoryService'
 import { recordGameStats } from '../services/authService'
@@ -109,9 +109,7 @@ export default function GamePage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [selectedCatId, setSelectedCatId] = useState('')
   const [showCatPicker, setShowCatPicker] = useState(false)
-  const [caughtCheating, setCaughtCheating] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [cheatToast, setCheatToast] = useState<string | null>(null)
   const [newCatName, setNewCatName] = useState('')
   const [addingCat, setAddingCat] = useState(false)
   const [bonusInputs, setBonusInputs] = useState<Record<string, number>>({})
@@ -126,8 +124,7 @@ export default function GamePage() {
 
   // Track which turn we've already handled to avoid double-submit
   const handledTurnKey = useRef('')
-  const cheatHandledRef = useRef(false)
-  const prevPlayerStatusesRef = useRef<Record<string, string>>({})
+
   const bonusInitializedRef = useRef('')   // categoryId para el que ya se pre-seleccionó bonus
 
   const isAdmin = game?.adminId === profile?.uid
@@ -175,14 +172,6 @@ export default function GamePage() {
     getCategories().then(cats => setCategories(cats.filter(c => c.isActive)))
   }, [])
 
-  // Reset cheat state when a new category starts so the player can participate again
-  useEffect(() => {
-    if (game?.currentCategoryId) {
-      setCaughtCheating(false)
-      cheatHandledRef.current = false
-    }
-  }, [game?.currentCategoryId])
-
   // Auto-inicializar bonus de 10 pts para el ganador de la categoría al entrar a category_done
   useEffect(() => {
     if (game?.status !== 'category_done' || !isAdmin) return
@@ -213,71 +202,6 @@ export default function GamePage() {
       if (ansId) validateAnswerWithPoints(gameId, ansId, 10)
     })
   }, [game?.status, answerIds.length])
-
-  // Detectar trampa de otros jugadores y mostrar toast a los demás
-  useEffect(() => {
-    players.forEach(player => {
-      const prev = prevPlayerStatusesRef.current[player.uid]
-      if (
-        prev === 'active' &&
-        player.status === 'eliminated' &&
-        player.uid !== profile?.uid &&
-        game?.status === 'player_turn'
-      ) {
-        setCheatToast(player.displayName)
-        const t = setTimeout(() => setCheatToast(null), 15000)
-        return () => clearTimeout(t)
-      }
-    })
-    const snapshot: Record<string, string> = {}
-    players.forEach(p => { snapshot[p.uid] = p.status })
-    prevPlayerStatusesRef.current = snapshot
-  }, [players])
-
-  // ── Anti-trampa: detectar si el jugador sale durante la categoría ─────────────
-  useEffect(() => {
-    const myPlayer = players.find(p => p.uid === profile?.uid)
-    const isActivePlayer = !isAdmin && myPlayer?.status === 'active'
-    // Vigilar durante toda la categoría: mientras hay turnos activos o pausados
-    const isCategoryLive = game?.status === 'player_turn' || game?.status === 'turn_paused'
-
-    if (!isActivePlayer || !isCategoryLive || caughtCheating) return
-
-    cheatHandledRef.current = false
-
-    async function handleCheat() {
-      if (cheatHandledRef.current) return
-      cheatHandledRef.current = true
-      setCaughtCheating(true)
-      if (gameId && profile) {
-        await recordCheat(gameId, profile.uid)
-        await addBonusPoints(gameId, profile.uid, -10)
-      }
-    }
-
-    let blurTimer: ReturnType<typeof setTimeout>
-
-    function onVisibilityChange() {
-      if (document.hidden) handleCheat()
-    }
-    function onBlur() {
-      blurTimer = setTimeout(() => handleCheat(), 800)
-    }
-    function onFocus() {
-      clearTimeout(blurTimer)
-    }
-
-    document.addEventListener('visibilitychange', onVisibilityChange)
-    window.addEventListener('blur', onBlur)
-    window.addEventListener('focus', onFocus)
-
-    return () => {
-      clearTimeout(blurTimer)
-      document.removeEventListener('visibilitychange', onVisibilityChange)
-      window.removeEventListener('blur', onBlur)
-      window.removeEventListener('focus', onFocus)
-    }
-  }, [isAdmin, players, game?.status, caughtCheating, gameId, profile])
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
@@ -497,80 +421,6 @@ export default function GamePage() {
       📊
     </button>
   )
-
-  // ── Toast trampa (visible para todos menos el tramposo) ──────────────────────
-  const cheatToastEl = cheatToast ? (
-    <div className="fixed top-2 left-0 right-0 z-50 flex justify-center pointer-events-none px-4">
-      <div
-        className="flex items-center gap-2 px-5 py-2.5 rounded-2xl shadow-2xl text-sm font-bold"
-        style={{ background: 'rgba(20,20,20,0.95)', border: '2px solid #FF5714', color: '#FF5714', maxWidth: 340 }}
-      >
-        <span className="text-xl">🚨</span>
-        <span style={{ color: '#fff' }}>
-          <span style={{ color: '#FF5714' }}>{cheatToast}</span> hizo trampa — <span style={{ color: '#FF5714', fontWeight: 900 }}>−10 pts</span>
-        </span>
-      </div>
-    </div>
-  ) : null
-
-  // ── Overlay trampa ────────────────────────────────────────────────────────────
-  if (caughtCheating) {
-    async function handleCheatOk() {
-      setCaughtCheating(false)
-      // Si el turno sigue siendo del jugador, forzar submit vacío para avanzar el turno
-      if (gameId && game && isMyTurn && !answerHandled) {
-        setLetterHandled(true)
-        setAnswerHandled(true)
-        await submitAnswer(gameId, game, players, '', true)
-      }
-    }
-
-    // Zumbido sutil + auto-dismiss a los 8 segundos
-    navigator.vibrate?.([300, 100, 300, 100, 200])
-    const cheatTimer = setTimeout(handleCheatOk, 8000)
-
-    return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center p-6"
-        style={{ background: '#111111' }}
-        // Limpiar timer si el usuario pulsa OK antes
-        ref={el => { if (!el) clearTimeout(cheatTimer) }}
-      >
-        <img src="/logo.svg" alt="BASTA" className="w-28 h-28 mb-6 animate-bounce" />
-        <h1
-          className="text-4xl font-display font-semibold text-white text-center mb-3"
-          style={{ letterSpacing: '0.08em' }}
-        >
-          ¡No hagas trampa!
-        </h1>
-        <p className="text-center mb-4 max-w-xs" style={{ color: '#888' }}>
-          Saliste de la ventana durante tu turno. Quedas{' '}
-          <span style={{ color: '#FF5714', fontWeight: 700 }}>fuera de esta categoría</span>.
-        </p>
-        <div
-          className="rounded-2xl px-6 py-4 text-center max-w-xs mb-6 space-y-2"
-          style={{ background: 'rgba(255,87,20,0.12)', border: '1px solid rgba(255,87,20,0.3)' }}
-        >
-          <p className="text-2xl font-black" style={{ color: '#FF5714' }}>−10 pts</p>
-          <p className="text-sm" style={{ color: '#FF5714' }}>
-            Se te descontaron 10 puntos de tu marcador.
-          </p>
-          <p className="text-xs" style={{ color: '#888' }}>
-            En la próxima categoría podrás volver a participar.
-          </p>
-        </div>
-        <button
-          onClick={() => { clearTimeout(cheatTimer); handleCheatOk() }}
-          className="px-10 py-3 rounded-xl font-display font-semibold text-white text-lg transition-all hover:scale-105 active:scale-95"
-          style={{ background: '#FF5714' }}
-        >
-          OK, entendido
-        </button>
-        <p className="text-xs mt-4 animate-pulse" style={{ color: '#555' }}>
-          Se cerrará automáticamente en 8 segundos…
-        </p>
-      </div>
-    )
-  }
 
   // ── Modal: selector de categorías para sorteo aleatorio ─────────────────────
   const randomPickerModal = showRandomPicker ? (
@@ -890,7 +740,7 @@ export default function GamePage() {
     return (
       <div className="max-w-lg mx-auto p-4 space-y-3">
         {scoreTableModal}{scoreFabEl}
-        {cheatToastEl}
+
         {/* Header: categoría y progreso */}
         <div className="bg-gradient-to-br from-brand-600 to-brand-800 rounded-2xl px-4 py-3 text-white">
           <div className="flex items-center justify-between">
@@ -1121,7 +971,7 @@ export default function GamePage() {
     return (
       <div className="max-w-lg mx-auto p-4 space-y-4">
         {scoreTableModal}{scoreFabEl}
-        {cheatToastEl}
+
         <div className="bg-gradient-to-br from-red-500 to-orange-500 rounded-2xl p-4 text-white text-center">
           <p className="text-2xl font-black">⏸ Juego pausado</p>
           <p className="text-sm opacity-80 mt-1">El admin pausó antes del turno de <strong>{nextPlayer?.displayName}</strong></p>
@@ -1212,7 +1062,7 @@ export default function GamePage() {
     return (
       <div className="max-w-lg mx-auto p-4 space-y-4">
         {scoreTableModal}{scoreFabEl}
-        {cheatToastEl}
+
         <div className="bg-gradient-to-br from-brand-600 to-charcoal rounded-2xl p-4 text-white text-center">
           <p className="text-xs uppercase tracking-widest opacity-80">Rotación {game.rotationNumber} completada</p>
           <h2 className="text-xl font-black mt-1">
