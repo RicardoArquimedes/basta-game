@@ -91,6 +91,13 @@ export default function Home() {
         {isAdmin && (
           <p className="text-xs text-gray-500 mt-1">Como admin, diriges la partida pero no juegas</p>
         )}
+        <button
+          onClick={() => navigate('/faq')}
+          className="mt-3 text-xs font-semibold px-4 py-1.5 rounded-full transition-colors"
+          style={{ background: 'var(--c-surface2)', color: 'var(--c-text3)', border: '1px solid var(--c-border)' }}
+        >
+          ¿Cómo se juega? →
+        </button>
       </div>
 
       {/* Banner reconexión */}
