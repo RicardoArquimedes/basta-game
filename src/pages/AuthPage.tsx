@@ -21,6 +21,13 @@ export default function AuthPage() {
         <p className="mt-2 text-sm font-medium" style={{ color: 'var(--c-text2)' }}>
           El juego de palabras más rápido
         </p>
+        <a
+          href="/faq"
+          className="mt-3 inline-block text-xs font-semibold px-4 py-1.5 rounded-full transition-colors"
+          style={{ background: 'var(--c-surface2)', color: 'var(--c-text3)', border: '1px solid var(--c-border)' }}
+        >
+          ¿Cómo se juega? →
+        </a>
       </div>
       <AuthForm onSuccess={() => {}} />
     </div>
